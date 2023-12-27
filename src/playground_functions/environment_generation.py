@@ -10,6 +10,7 @@ from math import floor
 import matplotlib.pyplot as plt
 import copy
 import heapq
+from community import community_louvain
 
 import operator
 import json
@@ -57,7 +58,7 @@ class ExperimentConfiguration:
         self.func_USERREQRAT = "random.randint(200,1000)"
 
         # APP and SERVICES
-        self.TOTALNUMBEROFAPPS = 20
+        self.TOTALNUMBEROFAPPS = 26
         # !!!
         self.func_APPGENERATION = "nx.gn_graph(random.randint(7,8))"  # algorithm for the generation of the random applications
         # self.func_APPGENERATION = "linear_graph(random.randint(2, 4))"  # algorithm for the generation of the random applications (agora linear)
@@ -75,6 +76,82 @@ class ExperimentConfiguration:
 
         current_time = int(time.time())
         random.seed(current_time)
+
+
+    def loadNetworkConfiguration(self, size):
+
+        if size == 'small':
+            # Cloud
+            self.CLOUDCAPACITY = 1000000  # MB RAM
+            self.CLOUDSPEED = 10000  # INSTR x MS
+            self.CLOUDBW = 125000  # BYTES / MS --> 1000 Mbits/s
+            self.CLOUDPR = 500  # MS
+
+            # Network
+            self.PERCENTATGEOFGATEWAYS = 0.25
+            self.func_PROPAGATIONTIME = "random.randint(2,10)"  # MS
+            self.func_BANDWITDH = "random.randint(75000,75000)"  # BYTES / MS
+            self.func_NETWORKGENERATION = "nx.barabasi_albert_graph(n=20, m=2)"  # Algorithm for the generation of the network topology
+            self.func_NODERESOURECES = "random.randint(10,25)"  # MB RAM #random distribution for the resources of the fog devices
+            self.func_NODESPEED = "random.randint(500,1000)"  # INTS / MS #random distribution for the speed of the fog devices
+
+            # Apps and Services
+            self.TOTALNUMBEROFAPPS = 5
+            self.func_APPGENERATION = "nx.gn_graph(random.randint(2,5))"  # Algorithm for the generation of the random applications
+            self.func_SERVICEINSTR = "random.randint(20000,60000)"  # INSTR --> Considering the nodespeed the values should be between 200 & 600 MS
+            # self.func_SERVICEMESSAGESIZE = "random.randint(1500000,4500000)"  # BYTES --> Considering the BW the values should be between 20 & 60 MS
+            self.func_SERVICEMESSAGESIZE = "random.randint(1500000,4500000)"  # BYTES --> Considering the BW the values should be between 20 & 60 MS
+            self.func_SERVICERESOURCES = "random.randint(1,4)"  # MB of RAM consume by services. Considering noderesources & appgeneration it will be possible to allocate 1 app or +/- 10 services per node
+            self.func_APPDEADLINE = "random.randint(2600,6600)"  # MS
+
+            return 20
+        elif size == 'medium':
+            # Cloud
+            self.CLOUDCAPACITY = 9999999999999999  # MB RAM
+            self.CLOUDSPEED = 10000  # INSTR x MS
+            self.CLOUDBW = 125000  # BYTES / MS --> 1000 Mbits/s
+            self.CLOUDPR = 500  # MS
+
+            # Network
+            self.PERCENTATGEOFGATEWAYS = 0.25
+            self.func_PROPAGATIONTIME = "random.randint(2,10)"  # MS
+            self.func_BANDWITDH = "random.randint(75000,75000)"  # BYTES / MS
+            self.func_NETWORKGENERATION = "nx.barabasi_albert_graph(n=50, m=2)"  # Algorithm for the generation of the network topology
+            self.func_NODERESOURECES = "random.randint(10,25)"  # MB RAM #random distribution for the resources of the fog devices
+            self.func_NODESPEED = "random.randint(500,1000)"  # INTS / MS #random distribution for the speed of the fog devices
+
+            # Apps and Services
+            self.TOTALNUMBEROFAPPS = 10
+            self.func_APPGENERATION = "nx.gn_graph(random.randint(2,8))"  # Algorithm for the generation of the random applications
+            self.func_SERVICEINSTR = "random.randint(20000,60000)"  # INSTR --> Considering the nodespeed the values should be between 200 & 600 MS
+            self.func_SERVICEMESSAGESIZE = "random.randint(1500000,4500000)"  # BYTES --> Considering the BW the values should be between 20 & 60 MS
+            self.func_SERVICERESOURCES = "random.randint(1,5)"  # MB of RAM consume by services. Considering noderesources & appgeneration it will be possible to allocate 1 app or +/- 10 services per node
+            self.func_APPDEADLINE = "random.randint(2600,6600)"  # MS
+            return 50
+
+        elif size == 'large':
+            # Cloud
+            self.CLOUDCAPACITY = 9999999999999999  # MB RAM
+            self.CLOUDSPEED = 10000  # INSTR x MS
+            self.CLOUDBW = 125000  # BYTES / MS --> 1000 Mbits/s
+            self.CLOUDPR = 500  # MS
+
+            # Network
+            self.PERCENTATGEOFGATEWAYS = 0.25
+            self.func_PROPAGATIONTIME = "random.randint(2,10)"  # MS
+            self.func_BANDWITDH = "random.randint(75000,75000)"  # BYTES / MS
+            self.func_NETWORKGENERATION = "nx.barabasi_albert_graph(n=100, m=2)"  # Algorithm for the generation of the network topology
+            self.func_NODERESOURECES = "random.randint(10,25)"  # MB RAM #random distribution for the resources of the fog devices
+            self.func_NODESPEED = "random.randint(500,1000)"  # INTS / MS #random distribution for the speed of the fog devices
+
+            # Apps and Services
+            self.TOTALNUMBEROFAPPS = 20
+            self.func_APPGENERATION = "nx.gn_graph(random.randint(2,10))"  # Algorithm for the generation of the random applications
+            self.func_SERVICEINSTR = "random.randint(20000,60000)"  # INSTR --> Considering the nodespeed the values should be between 200 & 600 MS
+            self.func_SERVICEMESSAGESIZE = "random.randint(1500000,4500000)"  # BYTES --> Considering the BW the values should be between 20 & 60 MS
+            self.func_SERVICERESOURCES = "random.randint(1,6)"  # MB of RAM consume by services. Considering noderesources & appgeneration it will be possible to allocate 1 app or +/- 10 services per node
+            self.func_APPDEADLINE = "random.randint(2600,6600)"  # MS
+            return 100
 
     def networkGeneration(self, n=20, m=2, file_name_network='netDefinition.json'):
         # Generation of the network topology
@@ -1396,17 +1473,28 @@ class ExperimentConfiguration:
             # Numero maximo de nodes que uma app tem
             max_mods = max([len(app['module']) for app in self.appJson])
 
-            comms = nx.community.louvain_communities(self.G, resolution=resolution, weight='PR')
-            temp_comms = list()
+            best_partition = community_louvain.best_partition(self.G)
+            del best_partition[self.cloudId]
+            comms = dict()
 
-            # Divide-se a rede até alguma community ter #nodes <= max_mods, ficando com a da interação anterior
-            while max([len(comm) for comm in comms]) >= max_mods:
-                temp_comms = comms.copy()
-                resolution += 1
-                comms = nx.community.louvain_communities(self.G, resolution=resolution, weight='PR')
+            for node, community in best_partition.items():
+                if community not in comms:
+                    comms[community] = set()
+                comms[community].add(node)
 
-            if len(temp_comms) != 0:
-                comms = temp_comms
+            comms = list(comms.values())
+            # comms = nx.community.louvain_communities(self.G, resolution=resolution, weight='PR')
+            #
+            # temp_comms = list()
+            #
+            # # Divide-se a rede até alguma community ter #nodes <= max_mods, ficando com a da interação anterior
+            # while max([len(comm) for comm in comms]) >= max_mods:
+            #     temp_comms = comms.copy()
+            #     resolution += 1
+            #     comms = nx.community.louvain_communities(self.G, resolution=resolution, weight='PR')
+            #
+            # if len(temp_comms) != 0:
+            #     comms = temp_comms
 
         comms_nr = len(comms)
 
