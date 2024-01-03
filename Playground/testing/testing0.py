@@ -103,8 +103,12 @@ def main(stop_time, it, folder_results, seed):
     # exp_conf.greedy_algorithm('allocDefinition.json', file_name_network='network.json')
     # plot_name = 'greedy_algorithm'
     #
-    exp_conf.backtrack_placement( first_alloc=True, mode='high_centrality_and_app_popularity', file_name_network='network.json')  # FCFS - high_centrality - Random - high_centrality_and_app_popularity
-    plot_name = 'backtrack_placement'
+    # exp_conf.backtrack_placement( first_alloc=True, mode='high_centrality_and_app_popularity', file_name_network='network.json')  # FCFS - high_centrality - Random - high_centrality_and_app_popularity
+    # plot_name = 'backtrack_placement'
+
+    exp_conf.RR_IPT_placement_v2()
+    plot_name = 'RR_IPT_placement_v2'
+
     """
     TOPOLOGY
     """
