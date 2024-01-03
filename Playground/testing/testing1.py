@@ -380,9 +380,9 @@ if __name__ == '__main__':
     list_for_communities = ['RR_IPT_placement']
 
 
-    algorithm_list= list_for_communities + list_for_mod1st
-    # algorithm_list = list_for_communities
-
+    # algorithm_list= list_for_communities + list_for_mod1st
+    # algorithm_list = list_for_communities + list_for_app1st
+    algorithm_list = list_for_near_GW
 
     # for algorithm in algorithm_list:
     #     total_mods_per_node_with_node_id[algorithm] = []
