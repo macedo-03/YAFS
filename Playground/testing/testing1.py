@@ -19,6 +19,7 @@ import pandas as pd
 import numpy as np
 
 # Meus imports
+import plots_concatenator
 from playground_functions import data_analysis
 from playground_functions import environment_generation as eg, myConfig
 from playground_functions.routing_algorithms import MaxBW, MaxBW_Root
@@ -32,8 +33,23 @@ from yafs.distribution import deterministic_distribution
 from yafs.path_routing import DeviceSpeedAwareRouting
 
 
-# NUMBER_OF_APPS = 10
-NUMBER_OF_NODES = 15
+
+# NUMBER_OF_NODES = 15
+
+def delete_files_in_folder(folder_path):
+    # Check if the folder exists
+    if not os.path.exists(folder_path):
+        print("Folder does not exist:", folder_path)
+        return
+
+    # Iterate over all files in the folder
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+
+        # Check if it's a file and not a directory
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+            print(f"Deleted {filename}")
 
 def append_results(it, path):
     if it == 0:
@@ -97,6 +113,7 @@ def append_mods_per_node(placement, total_mods_per_node, total_mods_per_node_wit
 
 
     for dt in placement.data['initialAllocation']:
+        mods_per_node[int(dt['id_resource'])]
         mods_per_node[int(dt['id_resource'])][0] += 1
         mods_per_node[int(dt['id_resource'])][1] = max([node['tier'] if node['id'] == dt['id_resource'] else -1 for node in data_network['entity']])
     for element in mods_per_node.values():
@@ -123,6 +140,9 @@ def main(stop_time, it, folder_results,folder_data_processing, algorithm, seed, 
     random.seed(seed)
     conf = myConfig.myConfig()
     exp_conf = eg.ExperimentConfiguration(conf, lpath=os.path.dirname(__file__))
+    global NUMBER_OF_NODES
+    NUMBER_OF_NODES = exp_conf.loadNetworkConfiguration(conf.myConfiguration)
+
 
     random.seed(seed)
     exp_conf.app_generation(app_struct='linear')
@@ -312,6 +332,8 @@ if __name__ == '__main__':
     # LOGGING_CONFIG = Path(__file__).parent / 'logging.ini'
     # logging.config.fileConfig(LOGGING_CONFIG)
 
+    delete_files_in_folder("data_analysis")
+
     folder_results = Path("results")
     folder_results.mkdir(parents=True, exist_ok=True)
     folder_results = str(folder_results) + '/'  # TODO bool
@@ -357,7 +379,9 @@ if __name__ == '__main__':
     list_for_app1st = ['greedy_latency_app1st', 'greedy_FRAM_app1st','near_GW_BW_PR_app1st', 'near_GW_PR_app1st', 'near_GW_BW_app1st']
     list_for_communities = ['RR_IPT_placement']
 
+
     algorithm_list= list_for_communities + list_for_mod1st
+    # algorithm_list = list_for_communities
 
 
     # for algorithm in algorithm_list:
@@ -407,3 +431,4 @@ if __name__ == '__main__':
     # modules distribution in cloud
     data_analysis.plot_number_modules_in_cloud(total_mods_cloud, nIterations)
     # data_analysis.plot_number_modules_in_cloud(total_mods_cloud, nIterations)
+    plots_concatenator.concatenate_images('collection.png')
