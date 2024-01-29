@@ -19,7 +19,7 @@ from yafs import Topology
 from playground_functions import myConfig
 
 debug_mode = False
-windows_mode = True # for Unix set to False
+windows_mode = False # for Unix set to False
 
 def linear_graph(size):
 	g = nx.DiGraph()
@@ -1595,7 +1595,7 @@ class ExperimentConfiguration:
 				allocFile.write(json.dumps(allocJson))
 
 	def RR_IPT_placement_v2(self, file_name_alloc='allocDefinition.json', comms_nr=None):
-		
+
 		comms = list()
 
 		# Se for dado um numero minimo de communities, divide-se a rede consoante o mesmo
@@ -1621,7 +1621,6 @@ class ExperimentConfiguration:
 
 			comms = list(comms.values())
 
-		
 		# Ordenam-se as communities da community com + IPT para a com -
 		comms.sort(key=lambda comm: -sum([self.netJson['entity'][c]['IPT'] for c in comm]) / len(comm))
 
@@ -1638,7 +1637,7 @@ class ExperimentConfiguration:
 		appsOrder = [app['id'] for app in self.appJson]
 		appsOrder.sort(key=lambda ind: -sum([msg['instructions'] for msg in self.appJson[ind]['message']]) / len(
 			self.appJson[ind]['message']))
-		
+
 		# nr de aplicacoes e distribuida igualmente pelas comunidades
 		appsPerComm = len(self.appJson) // comms_nr
 		appsCount = [0] * comms_nr
@@ -1691,7 +1690,7 @@ class ExperimentConfiguration:
 
 						node_i = 0
 						break
-				
+
 				else:
 					node_i += 1
 
@@ -1724,6 +1723,149 @@ class ExperimentConfiguration:
 
 			self.freeNodeResources = tempFreeRes.copy()
 
+		# Guarda as alocacoes no formato esperado
+		allocJson = {'initialAllocation': list()}
+
+		apps2mod = dict(
+			zip([app['id'] for app in self.appJson], [[mod['name'] for mod in app['module']] for app in self.appJson]))
+
+		for app_i, mods in apps2mod.items():
+			for mod in mods:
+				allocJson['initialAllocation'].append({'module_name': mod, 'app': app_i, 'id_resource': alloc[mod]})
+
+		if windows_mode:
+			# Win
+			with open(self.path + '\\' + self.cnf.resultFolder + '\\' + file_name_alloc, "w") as allocFile:
+				allocFile.write(json.dumps(allocJson))
+		else:
+			# Unix
+			with open(self.path + '/' + self.cnf.resultFolder + '/' + file_name_alloc, "w") as allocFile:
+				allocFile.write(json.dumps(allocJson))
+
+	def RR_IPT_placement_v3(self, file_name_alloc='allocDefinition.json', comms_nr=None):
+
+		comms = list()
+
+		# Se for dado um numero minimo de communities, divide-se a rede consoante o mesmo
+		if comms_nr is not None:
+			resolution = 0
+
+			# Se o nr de communities for = ao nr de nodes, já nao dá para subdividir mais a TOPO
+			while not len(comms) >= comms_nr or len(comms) == len(self.G.nodes):
+				# Calculam-se as communities para a respetiva resolution
+				comms = nx.community.louvain_communities(self.G, resolution=resolution, weight='PR')
+
+				resolution += 1
+
+		else:
+			best_partition = community_louvain.best_partition(self.G)
+			del best_partition[self.cloudId]
+			comms = dict()
+
+			for node, community in best_partition.items():
+				if community not in comms:
+					comms[community] = set()
+				comms[community].add(node)
+
+			comms = list(comms.values())
+
+		# Ordenam-se as communities da community com + IPT para a com -
+		comms.sort(key=lambda comm: -sum([self.netJson['entity'][c]['IPT'] for c in comm]) / len(comm))
+
+		# As communities passam de sets para lists para poderem ser ordenadas
+		comms = [[nd for nd in comm if nd != self.cloudId] for comm in comms if comm != {self.cloudId}]
+
+		comms_nr = len(comms)
+
+		# Communities sao ordenadas consoante o IPT dos seus nodes
+		for comm in comms:
+			comm.sort(key=lambda nd: -self.netJson['entity'][nd]['IPT'])
+
+		# As apps sao ordenadas consoante o sumatorio do # instrucoes das suas mensagens (+ -> -)
+		appsOrder = [app['id'] for app in self.appJson]
+		appsOrder.sort(key=lambda ind: -sum([msg['instructions'] for msg in self.appJson[ind]['message']]) / len(
+			self.appJson[ind]['message']))
+
+		# nr de aplicacoes e distribuida igualmente pelas comunidades
+		appsPerComm = len(self.appJson) // comms_nr
+		appsCount = [0] * comms_nr
+
+		alloc = dict()
+
+		for app_i in appsOrder:
+
+			app = self.apps[app_i]
+			tempFreeRes = self.freeNodeResources.copy()
+
+			node_i = 0
+			appLen = len(app.nodes)
+			commSearch = 0
+
+			while node_i < appLen and commSearch < len(comms):
+				cost = self.apps[app_i].nodes[node_i]['cost']
+
+				didAlloc = False
+				# procura dentro da primeira comm se existe algum node capaz de ficar com o serviço do node_i
+				for comm_nd in comms[0]:
+					if tempFreeRes[comm_nd] >= cost:
+						tempFreeRes[comm_nd] -= cost
+						alloc[self.apps[app_i].nodes[node_i]['module']] = comm_nd
+						didAlloc = True
+						break
+
+				# Executa o round robin dos nodes da community
+				if didAlloc:
+					# passa todos os nodes visitados para o fim da lista
+					while comms[0][-1] != alloc[self.apps[app_i].nodes[node_i]['module']]:
+						# while comms[0][-1] != alloc[self.apps[app_i].nodes[node_i]['module']]:
+						comms[0].append(comms[0].pop(0))
+
+				# procura noutra community (round robin das communities)
+				if not didAlloc:
+					comms.append(comms.pop(0))
+					appsCount.append(appsCount.pop(0))
+
+					commSearch += 1
+
+					if app.nodes[0]['module'] in alloc:
+						# realiza limpeza e reposiçao de recursos
+						tempFreeRes = self.freeNodeResources.copy()
+						for i in range(node_i):
+							del alloc[app.nodes[i]['module']]
+
+					node_i = 0
+
+				else:
+					node_i += 1
+
+			# Se apos procurar por todas as communities ainda nao tiver alocado a app
+			if app.nodes[0]['module'] not in alloc:
+
+				# alloca para a cloud
+				for node_i in app.nodes:
+					tempFreeRes[self.cloudId] -= cost
+					alloc[self.apps[app_i].nodes[node_i]['module']] = self.cloudId
+
+			else:
+				# Caso a community ainda nao esteja "cheia", soma ao respectivo contador
+				if appsCount[0] < appsPerComm:
+					appsCount[0] += 1
+
+				# Caso a community tenha alcançado o limite de apps e feito o round robin entre comms
+				if appsCount[0] >= appsPerComm:
+					comms.append(comms.pop(0))
+					appsCount.append(appsCount.pop(0))
+
+			# else:
+			# 	# caso contrário, adiciona ao fim da lista de communities por preencher
+			# 	if appsPerComm in appsCount:
+			# 		comms.insert(appsCount.index(appsPerComm), comms.pop(0))
+			# 		appsCount.insert(appsCount.index(appsPerComm), appsCount.pop(0))
+			# 	else:
+			# 		comms.append(comms.pop(0))
+			# 		appsCount.append(appsCount.pop(0))
+
+			self.freeNodeResources = tempFreeRes.copy()
 
 		# Guarda as alocacoes no formato esperado
 		allocJson = {'initialAllocation': list()}
@@ -1744,8 +1886,150 @@ class ExperimentConfiguration:
 			with open(self.path + '/' + self.cnf.resultFolder + '/' + file_name_alloc, "w") as allocFile:
 				allocFile.write(json.dumps(allocJson))
 
+	def RR_IPT_placement_v4(self, file_name_alloc='allocDefinition.json', comms_nr=None):
 
+		comms = list()
 
+		# Se for dado um numero minimo de communities, divide-se a rede consoante o mesmo
+		if comms_nr is not None:
+			resolution = 0
+
+			# Se o nr de communities for = ao nr de nodes, já nao dá para subdividir mais a TOPO
+			while not len(comms) >= comms_nr or len(comms) == len(self.G.nodes):
+				# Calculam-se as communities para a respetiva resolution
+				comms = nx.community.louvain_communities(self.G, resolution=resolution, weight='PR')
+
+				resolution += 1
+
+		else:
+			best_partition = community_louvain.best_partition(self.G)
+			del best_partition[self.cloudId]
+			comms = dict()
+
+			for node, community in best_partition.items():
+				if community not in comms:
+					comms[community] = set()
+				comms[community].add(node)
+
+			comms = list(comms.values())
+
+		# Ordenam-se as communities da community com + IPT para a com -
+		comms.sort(key=lambda comm: -sum([self.netJson['entity'][c]['IPT'] for c in comm]) / len(comm))
+
+		# As communities passam de sets para lists para poderem ser ordenadas
+		comms = [[nd for nd in comm if nd != self.cloudId] for comm in comms if comm != {self.cloudId}]
+
+		comms_nr = len(comms)
+
+		# Communities sao ordenadas consoante o IPT dos seus nodes
+		for comm in comms:
+			comm.sort(key=lambda nd: -self.netJson['entity'][nd]['IPT'])
+
+		# As apps sao ordenadas consoante o sumatorio do # instrucoes das suas mensagens (+ -> -)
+		appsOrder = [app['id'] for app in self.appJson]
+		appsOrder.sort(key=lambda ind: -sum([msg['instructions'] for msg in self.appJson[ind]['message']]) / len(
+			self.appJson[ind]['message']))
+
+		# nr de aplicacoes e distribuida igualmente pelas comunidades
+		appsPerComm = len(self.appJson) // comms_nr
+		appsCount = [0] * comms_nr
+
+		alloc = dict()
+
+		for app_i in appsOrder:
+
+			app = self.apps[app_i]
+			tempFreeRes = self.freeNodeResources.copy()
+
+			node_i = 0
+			appLen = len(app.nodes)
+			commSearch = 0
+
+			while node_i < appLen and commSearch < len(comms):
+				cost = self.apps[app_i].nodes[node_i]['cost']
+
+				didAlloc = False
+				# procura dentro da primeira comm se existe algum node capaz de ficar com o serviço do node_i
+				for comm_nd in comms[0]:
+					if tempFreeRes[comm_nd] >= cost:
+						tempFreeRes[comm_nd] -= cost
+						alloc[self.apps[app_i].nodes[node_i]['module']] = comm_nd
+						didAlloc = True
+						break
+
+				# Executa o round robin dos nodes da community
+				if didAlloc:
+					# passa todos os nodes visitados para o fim da lista
+					while comms[0][-1] != alloc[self.apps[app_i].nodes[node_i]['module']]:
+						# while comms[0][-1] != alloc[self.apps[app_i].nodes[node_i]['module']]:
+						comms[0].append(comms[0].pop(0))
+
+				# procura noutra community (round robin das communities)
+				if not didAlloc:
+					comms.append(comms.pop(0))
+					appsCount.append(appsCount.pop(0))
+
+					commSearch += 1
+
+					if app.nodes[0]['module'] in alloc:
+						# realiza limpeza e reposiçao de recursos
+						tempFreeRes = self.freeNodeResources.copy()
+						for i in range(node_i):
+							del alloc[app.nodes[i]['module']]
+
+					node_i = 0
+
+				else:
+					node_i += 1
+
+			# Se apos procurar por todas as communities ainda nao tiver alocado a app
+			if app.nodes[0]['module'] not in alloc:
+
+				# alloca para a cloud
+				for node_i in app.nodes:
+					tempFreeRes[self.cloudId] -= cost
+					alloc[self.apps[app_i].nodes[node_i]['module']] = self.cloudId
+
+			# else:
+			# 	# Caso a community ainda nao esteja "cheia", soma ao respectivo contador
+			# 	if appsCount[0] < appsPerComm:
+			# 		appsCount[0] += 1
+
+			# 	# Caso a community tenha alcançado o limite de apps e feito o round robin entre comms
+			# 	if appsCount[0] >= appsPerComm:
+			# 		comms.append(comms.pop(0))
+			# 		appsCount.append(appsCount.pop(0))
+
+			# else:
+			# 	# caso contrário, adiciona ao fim da lista de communities por preencher
+			# 	if appsPerComm in appsCount:
+			# 		comms.insert(appsCount.index(appsPerComm), comms.pop(0))
+			# 		appsCount.insert(appsCount.index(appsPerComm), appsCount.pop(0))
+			# 	else:
+			# 		comms.append(comms.pop(0))
+			# 		appsCount.append(appsCount.pop(0))
+
+			self.freeNodeResources = tempFreeRes.copy()
+
+		# Guarda as alocacoes no formato esperado
+		allocJson = {'initialAllocation': list()}
+
+		apps2mod = dict(
+			zip([app['id'] for app in self.appJson],
+				[[mod['name'] for mod in app['module']] for app in self.appJson]))
+
+		for app_i, mods in apps2mod.items():
+			for mod in mods:
+				allocJson['initialAllocation'].append({'module_name': mod, 'app': app_i, 'id_resource': alloc[mod]})
+
+		if windows_mode:
+			# Win
+			with open(self.path + '\\' + self.cnf.resultFolder + '\\' + file_name_alloc, "w") as allocFile:
+				allocFile.write(json.dumps(allocJson))
+		else:
+			# Unix
+			with open(self.path + '/' + self.cnf.resultFolder + '/' + file_name_alloc, "w") as allocFile:
+				allocFile.write(json.dumps(allocJson))
 
 
 
