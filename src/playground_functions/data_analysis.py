@@ -279,7 +279,7 @@ def plot_latency_per_placement_algorithm(folder_data_processing, algorithm_list)
     plt.xticks(rotation=45)
 
     plt.ylim(0, max(mean) * 1.1)
-    plt.xlabel(f'Placement Algorithms')
+    # plt.xlabel(f'Placement Algorithms')
     plt.ylabel('Latency (\u03bcs)')
     # plt.title('Latency Per Placement Algorithm')
     # plt.legend(algorithm_list, loc='upper right')
