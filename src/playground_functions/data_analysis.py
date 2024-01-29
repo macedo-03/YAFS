@@ -245,7 +245,7 @@ def scatter_plot_app_latency_per_algorithm(folder_data_processing, algorithm_lis
     plt.xticks(ticks)
     plt.xlabel(f'Apps')
     plt.ylabel('Latency (\u03bcs)')
-    plt.title('Average App Latency per algorithm')
+    # plt.title('Average App Latency per algorithm')
     plt.legend(labels, loc='upper right', bbox_to_anchor=(1.25, 1))
     plt.subplots_adjust(right=0.8)
     save_plot('Latency__Average_App_Latency_per_algorithm')
@@ -281,7 +281,7 @@ def plot_latency_per_placement_algorithm(folder_data_processing, algorithm_list)
     plt.ylim(0, max(mean) * 1.1)
     plt.xlabel(f'Placement Algorithms')
     plt.ylabel('Latency (\u03bcs)')
-    plt.title('Latency Per Placement Algorithm')
+    # plt.title('Latency Per Placement Algorithm')
     # plt.legend(algorithm_list, loc='upper right')
 
     for bar in bars:
