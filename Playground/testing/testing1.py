@@ -189,16 +189,19 @@ def main(stop_time, it, folder_results,folder_data_processing, algorithm, seed, 
         exp_conf.lambda_placement()
 
     elif algorithm == 'greedy_latency_app1st':
-        exp_conf.greedy_algorithm_latency(app1st=True)
+        exp_conf.greedy_algorithm_latency(app1st=True, extra=False)
 
     elif algorithm == 'greedy_latency_mod1st':
-        exp_conf.greedy_algorithm_latency(app1st=False)
-
-    elif algorithm == 'greedy_latency_mod1st_extra':
         exp_conf.greedy_algorithm_latency(app1st=False, extra=False)
 
+    # elif algorithm == 'greedy_latency_app1st_mean':
+    #     exp_conf.greedy_algorithm_latency(app1st=True, extra=False)
+    #
+    # elif algorithm == 'greedy_latency_mod1st_mean':
+    #     exp_conf.greedy_algorithm_latency(app1st=False, extra=False)
+
     elif algorithm == 'RR_IPT_placement':
-        exp_conf.RR_IPT_placement()
+        exp_conf.RR_IPT_placement_v4()
 
     placement_clock[algorithm].append(time.time() - start_clock)
 
@@ -345,13 +348,14 @@ if __name__ == '__main__':
     nIterations = 50# iteration for each experiment
     simulationDuration = 20000
 
-    god_tier_seed = 15612357
-    random_seed = True
+    god_tier_seed = 1706457491
+    random_seed = False
     if random_seed:
         seed = int(time.time())
+        print("\nseed\n", seed, "\n\n")
     else:
         seed = god_tier_seed
-
+    random.seed(seed)
     seed_list = [random.randint(1, 100000) for _ in range(nIterations)]
 
     modules_per_node = dict()
@@ -371,18 +375,19 @@ if __name__ == '__main__':
     # algorithm_list = [ 'greedy_FRAM' ,'greedy_latency', 'near_GW_BW', 'near_GW_PR', 'near_GW_BW_PR', 'RR_IPT_placement']
 
     list_for_greedy_latency = ['greedy_latency_app1st', 'greedy_latency_mod1st', 'greedy_latency_mod1st_extra']
+    list_for_greedy_latency2 = ['greedy_latency_app1st', 'greedy_latency_mod1st', 'greedy_latency_mod1st_mean', 'greedy_latency_app1st_mean']
     list_for_greedy_FRAM = ['greedy_FRAM_mod1st', 'greedy_FRAM_app1st']
     list_for_near_GW = ['near_GW_BW_PR_mod1st', 'near_GW_BW_PR_app1st', 'near_GW_PR_mod1st', 'near_GW_PR_app1st', 'near_GW_BW_mod1st', 'near_GW_BW_app1st']
     list_for_near_GW_mod1st = ['near_GW_BW_PR_mod1st', 'near_GW_PR_mod1st',  'near_GW_BW_mod1st']
     list_for_near_GW_app1st = ['near_GW_BW_PR_app1st', 'near_GW_PR_app1st', 'near_GW_BW_app1st']
     list_for_mod1st = ['greedy_latency_mod1st', 'greedy_FRAM_mod1st','near_GW_BW_PR_mod1st', 'near_GW_PR_mod1st',  'near_GW_BW_mod1st']
     list_for_app1st = ['greedy_latency_app1st', 'greedy_FRAM_app1st','near_GW_BW_PR_app1st', 'near_GW_PR_app1st', 'near_GW_BW_app1st']
+    # list_for_communities = ['RR_IPT_placement']
     list_for_communities = ['RR_IPT_placement']
 
 
-    # algorithm_list= list_for_communities + list_for_mod1st
+    algorithm_list= list_for_communities + list_for_mod1st
     # algorithm_list = list_for_communities + list_for_app1st
-    algorithm_list = list_for_near_GW
 
     # for algorithm in algorithm_list:
     #     total_mods_per_node_with_node_id[algorithm] = []
