@@ -134,7 +134,7 @@ def append_FRAM_per_tier(data_network, total_FRAM_per_tier):
         total_FRAM_per_tier[algorithm][int(node['tier'])][0] += node['FRAM']
         total_FRAM_per_tier[algorithm][int(node['tier'])][1] += node['RAM']
 
-def main(stop_time, it, folder_results,folder_data_processing, algorithm, seed, total_mods_per_node, total_mods_per_node_with_node_id, total_mods_cloud, avg_mods_per_tier_node):
+def main(stop_time, it, folder_results,folder_data_processing, algorithm, seed, total_mods_per_node, total_mods_per_node_with_node_id, total_mods_cloud, avg_mods_per_tier_node, app1st_mode):
 
     global nodes
     random.seed(seed)
@@ -155,53 +155,95 @@ def main(stop_time, it, folder_results,folder_data_processing, algorithm, seed, 
 
     start_clock = time.time()
 
-    if algorithm == 'random':
-        exp_conf.randomPlacement(file_name_network='network.json')
+    if app1st_mode:
+        if algorithm == 'near_GW_BW_PR':
+            exp_conf.near_GW_placement_app1st(weight='BW_PR')
 
-    elif algorithm == 'bt_min_mods':
-        exp_conf.bt_min_mods()
+        elif algorithm == 'near_GW_PR':
+            exp_conf.near_GW_placement_app1st(weight='PR')
 
-    elif algorithm == 'near_GW_BW_PR_mod1st':
-        exp_conf.near_GW_placement(weight='BW_PR')
+        elif algorithm == 'near_GW_BW':
+            exp_conf.near_GW_placement_app1st(weight='BW')
 
-    elif algorithm == 'near_GW_PR_mod1st':
-        exp_conf.near_GW_placement(weight='PR')
+        elif algorithm == 'greedy_FRAM':
+            exp_conf.greedy_algorithm_FRAM(app1st=True)
 
-    elif algorithm == 'near_GW_BW_mod1st':
-        exp_conf.near_GW_placement(weight='BW')
+        elif algorithm == 'greedy_latency':
+            exp_conf.greedy_algorithm_latency(app1st=True, extra=False)
 
-    elif algorithm == 'near_GW_BW_PR_app1st':
-        exp_conf.near_GW_placement_app1st(weight='BW_PR')
+        elif algorithm == 'RR_IPT_placement':
+            exp_conf.RR_IPT_placement_v5()
 
-    elif algorithm == 'near_GW_PR_app1st':
-        exp_conf.near_GW_placement_app1st(weight='PR')
+    else:
+        if algorithm == 'near_GW_BW_PR':
+            exp_conf.near_GW_placement(weight='BW_PR')
 
-    elif algorithm == 'near_GW_BW_app1st':
-        exp_conf.near_GW_placement_app1st(weight='BW')
+        elif algorithm == 'near_GW_PR':
+            exp_conf.near_GW_placement(weight='PR')
 
-    elif algorithm == 'greedy_FRAM_app1st':
-        exp_conf.greedy_algorithm_FRAM(app1st=True)
+        elif algorithm == 'near_GW_BW':
+            exp_conf.near_GW_placement(weight='BW')
 
-    elif algorithm == 'greedy_FRAM_mod1st':
-        exp_conf.greedy_algorithm_FRAM(app1st=False)
+        elif algorithm == 'greedy_FRAM':
+            exp_conf.greedy_algorithm_FRAM(app1st=False)
 
-    elif algorithm == 'lambda':
-        exp_conf.lambda_placement()
+        elif algorithm == 'greedy_latency':
+            exp_conf.greedy_algorithm_latency(app1st=False, extra=False)
 
-    elif algorithm == 'greedy_latency_app1st':
-        exp_conf.greedy_algorithm_latency(app1st=True, extra=False)
+        elif algorithm == 'RR_IPT_placement':
+            exp_conf.RR_IPT_placement_v6()
 
-    elif algorithm == 'greedy_latency_mod1st':
-        exp_conf.greedy_algorithm_latency(app1st=False, extra=False)
-
-    # elif algorithm == 'greedy_latency_app1st_mean':
+    #
+    # if algorithm == 'random':
+    #     exp_conf.randomPlacement(file_name_network='network.json')
+    #
+    # elif algorithm == 'bt_min_mods':
+    #     exp_conf.bt_min_mods()
+    #
+    # elif algorithm == 'near_GW_BW_PR_mod1st':
+    #     exp_conf.near_GW_placement(weight='BW_PR')
+    #
+    # elif algorithm == 'near_GW_PR_mod1st':
+    #     exp_conf.near_GW_placement(weight='PR')
+    #
+    # elif algorithm == 'near_GW_BW_mod1st':
+    #     exp_conf.near_GW_placement(weight='BW')
+    #
+    # elif algorithm == 'near_GW_BW_PR_app1st':
+    #     exp_conf.near_GW_placement_app1st(weight='BW_PR')
+    #
+    # elif algorithm == 'near_GW_PR_app1st':
+    #     exp_conf.near_GW_placement_app1st(weight='PR')
+    #
+    # elif algorithm == 'near_GW_BW_app1st':
+    #     exp_conf.near_GW_placement_app1st(weight='BW')
+    #
+    # elif algorithm == 'greedy_FRAM_app1st':
+    #     exp_conf.greedy_algorithm_FRAM(app1st=True)
+    #
+    # elif algorithm == 'greedy_FRAM_mod1st':
+    #     exp_conf.greedy_algorithm_FRAM(app1st=False)
+    #
+    # elif algorithm == 'lambda':
+    #     exp_conf.lambda_placement()
+    #
+    # elif algorithm == 'greedy_latency_app1st':
     #     exp_conf.greedy_algorithm_latency(app1st=True, extra=False)
     #
-    # elif algorithm == 'greedy_latency_mod1st_mean':
+    # elif algorithm == 'greedy_latency_mod1st':
     #     exp_conf.greedy_algorithm_latency(app1st=False, extra=False)
-
-    elif algorithm == 'RR_IPT_placement':
-        exp_conf.RR_IPT_placement_v4()
+    #
+    # # elif algorithm == 'greedy_latency_app1st_mean':
+    # #     exp_conf.greedy_algorithm_latency(app1st=True, extra=False)
+    # #
+    # # elif algorithm == 'greedy_latency_mod1st_mean':
+    # #     exp_conf.greedy_algorithm_latency(app1st=False, extra=False)
+    #
+    # elif algorithm == 'RR_IPT_placement_app1st':
+    #     exp_conf.RR_IPT_placement_v5()
+    #
+    # elif algorithm == 'RR_IPT_placement_mod1st':
+    #     exp_conf.RR_IPT_placement_v6()
 
     placement_clock[algorithm].append(time.time() - start_clock)
 
@@ -378,16 +420,18 @@ if __name__ == '__main__':
     list_for_greedy_latency2 = ['greedy_latency_app1st', 'greedy_latency_mod1st', 'greedy_latency_mod1st_mean', 'greedy_latency_app1st_mean']
     list_for_greedy_FRAM = ['greedy_FRAM_mod1st', 'greedy_FRAM_app1st']
     list_for_near_GW = ['near_GW_BW_PR_mod1st', 'near_GW_BW_PR_app1st', 'near_GW_PR_mod1st', 'near_GW_PR_app1st', 'near_GW_BW_mod1st', 'near_GW_BW_app1st']
+    list_for_communities = ['RR_IPT_placement_app1st', 'RR_IPT_placement_mod1st']
     list_for_near_GW_mod1st = ['near_GW_BW_PR_mod1st', 'near_GW_PR_mod1st',  'near_GW_BW_mod1st']
     list_for_near_GW_app1st = ['near_GW_BW_PR_app1st', 'near_GW_PR_app1st', 'near_GW_BW_app1st']
-    list_for_mod1st = ['greedy_latency_mod1st', 'greedy_FRAM_mod1st','near_GW_BW_PR_mod1st', 'near_GW_PR_mod1st',  'near_GW_BW_mod1st']
-    list_for_app1st = ['greedy_latency_app1st', 'greedy_FRAM_app1st','near_GW_BW_PR_app1st', 'near_GW_PR_app1st', 'near_GW_BW_app1st']
+    list_for_mod1st = ['RR_IPT_placement_mod1st', 'greedy_latency_mod1st', 'greedy_FRAM_mod1st','near_GW_BW_PR_mod1st', 'near_GW_PR_mod1st',  'near_GW_BW_mod1st']
+    list_for_app1st = ['RR_IPT_placement_app1st', 'greedy_latency_app1st', 'greedy_FRAM_app1st','near_GW_BW_PR_app1st', 'near_GW_PR_app1st', 'near_GW_BW_app1st']
     # list_for_communities = ['RR_IPT_placement']
-    list_for_communities = ['RR_IPT_placement']
+    # list_for_communities = ['RR_IPT_placement_app1st', 'RR_IPT_placement_mod1st']
+    combo_list = ['RR_IPT_placement', 'greedy_latency', 'greedy_FRAM','near_GW_BW_PR', 'near_GW_PR']
 
-
-    algorithm_list= list_for_communities + list_for_mod1st
-    # algorithm_list = list_for_communities + list_for_app1st
+    # algorithm_list = list_for_mod1st
+    algorithm_list = combo_list
+    app1st_mode = True
 
     # for algorithm in algorithm_list:
     #     total_mods_per_node_with_node_id[algorithm] = []
@@ -408,7 +452,7 @@ if __name__ == '__main__':
 
             start_time = time.time()
             main(stop_time=simulationDuration,
-                 it=iteration, folder_results=folder_results, folder_data_processing=folder_data_processing,algorithm=algorithm, seed=seed_list[iteration], total_mods_per_node=total_mods_per_node, total_mods_per_node_with_node_id=total_mods_per_node_with_node_id, total_mods_cloud=total_mods_cloud, avg_mods_per_tier_node=avg_mods_per_tier_node)
+                 it=iteration, folder_results=folder_results, folder_data_processing=folder_data_processing,algorithm=algorithm, seed=seed_list[iteration], total_mods_per_node=total_mods_per_node, total_mods_per_node_with_node_id=total_mods_per_node_with_node_id, total_mods_cloud=total_mods_cloud, avg_mods_per_tier_node=avg_mods_per_tier_node, app1st_mode = app1st_mode)
             sim_duration = time.time() - start_time
             print("\n--- %s seconds ---" % (sim_duration))
 
@@ -437,3 +481,8 @@ if __name__ == '__main__':
     data_analysis.plot_number_modules_in_cloud(total_mods_cloud, nIterations)
     # data_analysis.plot_number_modules_in_cloud(total_mods_cloud, nIterations)
     plots_concatenator.concatenate_images('collection.png')
+
+    if(app1st_mode):
+        print("\n\nAPP 1ST")
+    else:
+        print("\n\nMOD 1ST")
