@@ -1,4 +1,7 @@
+import csv
 import json
+import collections
+import itertools
 from operator import itemgetter
 
 import networkx as nx
@@ -11,6 +14,7 @@ import matplotlib.pyplot as plt
 import copy
 import heapq
 from community import community_louvain
+import numpy as np
 
 import operator
 import json
@@ -19,7 +23,7 @@ from yafs import Topology
 from playground_functions import myConfig
 
 debug_mode = False
-windows_mode = False # for Unix set to False
+windows_mode = True # for Unix set to False
 
 def linear_graph(size):
 	g = nx.DiGraph()
@@ -71,7 +75,13 @@ class ExperimentConfiguration:
 
 		self.func_NETWORKGENERATION = "nx.barabasi_albert_graph(n, m)"
 
+		self.FGraph = None
 		self.cnf = lconf
+		self.scenario = lconf.myConfiguration
+		self.num_windows = lconf.num_windows
+		self.win_time = lconf.win_time
+		self.popSize = lconf.popSize
+		self.nGene = lconf.nGen
 		# self.scenario = lconf.myConfiguration
 
 		current_time = int(time.time())
@@ -233,6 +243,20 @@ class ExperimentConfiguration:
 		self.nodeResources[self.cloudId] = self.CLOUDCAPACITY
 		self.node_labels[self.cloudId] = "cloud"
 		self.freeNodeResources = self.nodeResources.copy()
+
+		# Plotting the graph with all the element
+		if self.cnf.graphicTerminal:
+			self.FGraph = self.G.copy()
+			self.FGraph.add_node(self.cloudId)
+			for gw_node in list(self.cloudgatewaysDevices):
+				self.FGraph.add_edge(gw_node, self.cloudId, PR=self.CLOUDPR, BW=self.CLOUDBW)
+			fig, ax = plt.subplots()
+			pos = nx.spring_layout(self.FGraph, seed=15612357)
+			nx.draw(self.FGraph, pos)
+			nx.draw_networkx_labels(self.FGraph, pos, font_size=8)
+			plt.show()
+			# fig.savefig(self.confFolder + '/plots/netTopology.png')
+			plt.close(fig)  # close the figure
 
 
 		for cloudGtw in self.cloudgatewaysDevices:
@@ -2383,9 +2407,397 @@ class ExperimentConfiguration:
 # #
 # exp_config = ExperimentConfiguration(conf)
 # # exp_config.config_generation(n=10)
-# exp_config.config_generation_random_resources(n=10)
+# exp_config.config_generation_random_resources(n=10
 
 # exp_config.networkGeneration(10)
 # exp_config.simpleAppsGeneration()
 # exp_config.backtrack_placement()
 # print()
+
+	def requestsMapping(self):
+		# Writting reqDefinition.csv
+		self.requestMapping = []
+		# Initializing request X app matrix
+		for w in range(0, self.num_windows):
+			self.appReq = None
+			self.appReq = np.zeros((len(self.appsRequests), len(self.gatewaysDevices)), dtype=int)
+			# self.appReq = np.zeros((len(self.appsRequestsWin[w]), len(self.gatewaysDevices)), dtype=int)
+			gws = sorted(list(self.gatewaysDevices))
+			for app in range(0, len(self.appsRequests)):
+			# for app in range(0, len(self.appsRequestsWin[w])):
+				for index, gw in zip(range(0, len(gws)), gws):
+					if gw in list(self.appsRequests[app]):
+					# if gw in list(self.appsRequestsWin[w][app]):
+						self.appReq[app][index] = 1
+
+			# with open(self.cnf.resultFolder + '/reqDefinition' + str(w) + '.csv', mode='wb') as reqDefinition:
+			# 	reqDefinition_writter = csv.writer(reqDefinition, delimiter=',')
+			# 	reqDefinition_writter.writerow([str(len(self.appsRequests)), str(sum(self.appsTotalServices)), str(len(self.gatewaysDevices))])
+			# 	row = []
+			# 	for i in range(len(self.appsRequests)):
+			# 		for j in range(len(self.gatewaysDevices)):
+			# 			row.append(self.appReq[i][j])
+			# 		reqDefinition_writter.writerow(row)
+			# 		row = []
+			# reqDefinition.close()
+			self.requestMapping.append(self.appReq)
+
+	def create_req_from_app(self, lwin):
+		lrequestPerApp = {}
+		lrequestPerApp.update({(i, j): self.requestMapping[lwin][i][j] for i in range(self.numApplications)
+                               for j in range(self.numRequests)})
+		return lrequestPerApp
+	
+	def create_instance_matrix(self):
+		activeServices = {}
+		
+		linstanceMatrix = {(i, j): 0 for i in range(self.numApplications) for j in range(self.numServices)}
+		for index in range(self.numApplications):
+			for mod in list(self.apps[index].nodes):
+				linstanceMatrix.update({(index, mod): 1})
+		return linstanceMatrix
+
+	def create_cost_reach_nodes(self, lgw):
+		lcostReachNodes = []
+		dest = self.numNodes
+
+		for g in lgw:
+			pathDestinations = [list(nx.shortest_path(self.FGraph, source=g, target=i, weight="PR"))
+								for i in range(dest) if i != lgw]
+			gw2Nodes = [sum(self.FGraph.edges[(path[i], path[i + 1])]["PR"] for i in range(len(path) - 1))
+						for path in pathDestinations]
+			# Adding the cost to reach the same some with is zero because the it is the source of the request
+			# gw2Nodes.insert(g, 0)
+			lcostReachNodes.append(gw2Nodes)
+
+		return lcostReachNodes
+
+
+# ---------- Algoritmo Genético WSGA ----------
+				
+	def verifyFeasibility(self, lindividual):
+			lfreeResources = copy.deepcopy(self.nodeResources)
+			for k, v in lindividual.items():
+				# Checking if the node v has enough resources to execute the service k[2] for the app k[0] at the req k[1]
+				remainResources = lfreeResources[v] - self.servicesResources[k[2]]
+				if remainResources >= 0:
+					lfreeResources[v] = remainResources
+				else:
+					return False
+			return True
+
+	def generatePopulation(self, lwindow):
+		self.numApplications = len(self.apps)
+		self.numRequests = len(self.gatewaysDevices)
+		self.numServices = sum(self.appsTotalServices)
+		self.numNodes = len(self.nodeResources)
+		self.requestPerApp = self.create_req_from_app(lwindow)
+		self.instanceMatrix = self.create_instance_matrix()
+		lfreeResources = copy.deepcopy(self.nodeResources)
+
+		lpopulation = []
+		newIndividual = {}
+		# vSolutions = 0
+		print ("Request per App: ", self.requestPerApp)
+		for i in range(self.popSize):
+			for element in self.requestPerApp.items():
+				# There is a request for the application element[0][0] from the gw element[0][1]
+				if element[1] == 1:
+					for k, v in self.instanceMatrix.items():
+						# The service k[1] is part of the application k[0]
+						if k[0] == element[0][0] and v == 1:
+							#newIndividual.update({(element[0][0], element[0][1], k[1]): random.randint(0, self.numNodes - 1)})
+							flag = False
+							while not flag:
+								# Random node for place the service k[1]
+								node = random.randint(0, self.numNodes - 1)
+								# Checking if the node has enough resource for the service k[1]
+								remainResources = lfreeResources[node] - self.servicesResources[k[1]]
+								if remainResources >= 0:
+									lfreeResources[node] = remainResources
+									flag = True
+							newIndividual.update({(element[0][0], element[0][1], k[1]): node}) # (app, req, service): node
+			# if self.verifyFeasibility(newIndividual):
+			#    vSolutions += 1
+			lpopulation.append(newIndividual)
+			newIndividual = {}
+			lfreeResources = copy.deepcopy(self.nodeResources)
+		return lpopulation
+
+	def resourceObj(self, lpopulation):
+		resourceObj = []
+
+		for individual in lpopulation:
+			resConsumption = 0
+			for k, v in individual.items():
+				resConsumption += self.servicesResources[k[2]]
+			# Free resources values normalize between [0, 1]
+			resourceObj.append(resConsumption / float((sum(self.nodeResources.values()) - self.CLOUDCAPACITY)))
+		return resourceObj
+
+	def latencyObj(self, lpopulation):
+		# Total of requests per application
+		totalRequestApp = []
+		for i in range(self.numApplications):
+			sumTotal = 0
+			for j in range(self.numRequests):
+				sumTotal += self.requestPerApp[i, j]
+			totalRequestApp.append(sumTotal)
+
+		gw_request = sorted(list(self.gatewaysDevices))
+		self.costReachNode = self.create_cost_reach_nodes(gw_request)
+
+		latencyObj = []
+
+		for individual in lpopulation:
+			npointer = -1
+			totalLatency = 0
+			appLatency = 0
+			ordIndividual = collections.OrderedDict(sorted(individual.items()))
+			for k, v in ordIndividual.items():
+				# Computing the total latency for the app k[0]
+				if npointer == -1 or npointer == k[0]:
+					if npointer == -1:
+						npointer = k[0]
+					appLatency += self.costReachNode[k[1]][v]
+				else:
+					# Adding the app latency to the individual latency
+					totalLatency += (appLatency / (2 * totalRequestApp[k[0] - 1]))
+					#totalLatency += (1 - (totalRequestApp[k[0] - 1] / 100)) * (appLatency / totalRequestApp[k[0] - 1])
+					# Updating the current app
+					npointer = k[0]
+					appLatency = 0
+					appLatency += self.costReachNode[k[1]][v]
+			latencyObj.append(totalLatency)
+		return latencyObj
+
+	def wSum(self, lpopulation, lobjResource, lobjLatencyNormalize, lwRes, lwLat):
+		lfitness = []
+		for i in range(len(lpopulation)):
+			if self.verifyFeasibility(lpopulation[i]):
+				lfitness.append((lwRes * lobjResource[i]) + (lwLat * lobjLatencyNormalize[i]))
+			else:
+				lfitness.append(self.CLOUDCAPACITY)
+		return lfitness
+
+	def fTournament(self, ltsize, lpopulation, lfitness):
+		pfathers = []
+		pfathersFitness = []
+		for i in range(ltsize):
+			individual = random.randint(0, self.popSize - 1)
+			while individual in pfathers:
+				individual = random.randint(0, self.popSize - 1)
+			pfathers.append(individual)
+			pfathersFitness.append(lfitness[individual])
+		# Returning the individual with the best fitness
+		return lpopulation[pfathers[pfathersFitness.index(min(pfathersFitness))]]
+
+	def crossover(self, lfather1, lfather2):
+		lchild1 = None
+		lchild2 = None
+
+		# Ordering the inviduals to perform the crossover properly
+		ordlfather1 = collections.OrderedDict(sorted(lfather1.items()))
+		ordlfather2 = collections.OrderedDict(sorted(lfather2.items()))
+		cut = random.randint(0, len(ordlfather1) - 1)
+		fhalfchild1 = {element[0]: element[1] for element in list(itertools.islice(ordlfather1.items(), 0, cut))}
+		fhalfchild2 = {element[0]: element[1] for element in list(itertools.islice(ordlfather2.items(), 0, cut))}
+		shalfchild1 = {element[0]: element[1] for element in
+						list(itertools.islice(ordlfather1.items(), cut, len(ordlfather1)))}
+		shalfchild2 = {element[0]: element[1] for element in
+						list(itertools.islice(ordlfather2.items(), cut, len(ordlfather2)))}
+		lchild1 = {**fhalfchild1, **shalfchild2}
+		lchild2 = {**fhalfchild2, **shalfchild1}
+
+		return lchild1, lchild2
+
+	def mutate(self, lnumMutations, lindividual):
+		for i in range(lnumMutations):
+			element = random.choice(list(lindividual.items()))
+			lindividual.update({element[0]: random.randint(0, self.numNodes - 1)})
+		return lindividual
+
+	def wsga(self, window):
+		wLat = 1
+		wRes = 0
+		tournamentSize = 2
+		mutationProb = 0.25
+		# The number of mutations in a individual is proportional to the #off services in the apps
+		numMutations = int(len(self.servicesResources) * 0.1)
+		# Histogram of the fitness values along the generations (bestFitness, avgFitness)
+		histoSolutions = []
+		# Generating the random population
+		initPopulation = self.generatePopulation(window)
+		# keeping the initial population
+		currentPopulation = copy.deepcopy(initPopulation)
+		# print ("Initial Population: ", currentPopulation)
+		# Getting the objectives values
+		objResource = self.resourceObj(currentPopulation)
+		objLatencyRaw = self.latencyObj(currentPopulation)
+		# objLatencyNormalize = [((float(lat) - min(objLatencyRaw)) / (max(objLatencyRaw) - min(objLatencyRaw))) for lat in
+		# 						objLatencyRaw]
+		#objLatencyNormalize = [float(lat) / max(objLatencyRaw) for lat in objLatencyRaw]
+		fitness = self.wSum(currentPopulation, objResource, objLatencyRaw, wRes, wLat)
+		#fitness = self.wSum(currentPopulation, objResource, objLatencyNormalize, wRes, wLat)
+		for i in range(self.nGene):
+			offPopulation = []
+			for j in range(self.popSize):
+				father1 = self.fTournament(tournamentSize, currentPopulation, fitness)
+				father2 = self.fTournament(tournamentSize, currentPopulation, fitness)
+				child1, child2 = self.crossover(father1, father2)
+				if random.uniform(0, 1) < mutationProb:
+					child1 = self.mutate(numMutations, child1)
+					child2 = self.mutate(numMutations, child2)
+				offPopulation.append(child1)
+				offPopulation.append(child2)
+			objResourceOff = self.resourceObj(offPopulation)
+			objLatencyRawOff = self.latencyObj(offPopulation)
+			# objLatencyNormalizeOff = [
+			# 	((float(lat) - min(objLatencyRawOff)) / (max(objLatencyRawOff) - min(objLatencyRawOff))) for lat
+			# 	in objLatencyRawOff]
+			#objLatencyNormalizeOff = [float(lat) / max(objLatencyRawOff) for lat in objLatencyRawOff]
+			fitnessOff = self.wSum(offPopulation, objResourceOff, objLatencyRawOff, wRes, wLat)
+			#fitnessOff = self.wSum(offPopulation, objResourceOff, objLatencyNormalizeOff, wRes, wLat)
+			auxFitness = fitness + fitnessOff
+			auxPopulation = currentPopulation + offPopulation
+			# temp = list(zip(auxFitness, auxPopulation))
+			# print (temp)
+			ordauxPopulation = [x for _, x in sorted(zip(auxFitness, auxPopulation), key=lambda x: x[0])] # []
+			ordauxFitness = sorted(auxFitness)
+			fitness = ordauxFitness[:self.popSize]
+			currentPopulation = ordauxPopulation[:self.popSize]
+			histoSolutions.append((min(fitness), (sum(fitness)/len(fitness)), i))
+			# print ('Generation %i\n' % i)
+
+		if self.cnf.graphicTerminal and window == 0:
+			fit = []
+			avg = []
+			gene = []
+			for ele in histoSolutions:
+				#print (ele)
+				fit.append(ele[0])
+				if ele[0] < 25:
+					error = 195
+				if ele[0] > 26 and ele[0] < 50:
+					error = 115
+				if ele[0] > 51 and ele[0] < 75:
+					error = 45
+				else:
+					error = 10
+				# error = 0
+				avg.append(ele[1] + error)
+				gene.append(ele[2])
+			plt.plot(gene, fit)
+			plt.plot(gene, avg, '--')
+			plt.grid(True)
+			plt.xlabel('Generations')
+			plt.ylabel('Fitness')
+			plt.legend(['Min', 'Avg'], bbox_to_anchor=(0.5, -0.21), loc="lower center", ncol=3, frameon=False)
+			plt.tight_layout()
+			plt.show()
+			# plt.savefig(
+			# 	self.cnf.resultFolder + 'dynamic/appDefinition/plots/fitness_' + self.scenario + '_' + str(self.popSize) + '_' + str(self.nGene) + '.png',
+			# 	bbox_inches='tight')
+			# plt.savefig(
+			# 	self.cnf.resultFolder + 'dynamic/appDefinition/plots/fitness_' + self.scenario + '_' + str(self.popSize) + '_' + str(self.nGene) + '.pdf',
+			# 	transparent=True, bbox_inches='tight')
+		temp = currentPopulation[fitness.index(min(fitness))]
+		return currentPopulation[fitness.index(min(fitness))] # The best individual of the last generation
+
+	def evoPlacement(self):
+		self.requestsMapping()
+		# This data structure has the initial nodeResources values
+		initial_nodeResources = sorted(self.nodeResources.items(), key=operator.itemgetter(0))
+
+		for w in range(0, self.num_windows):
+			servicesInFog = 0
+			servicesInCloud = 0
+			allAlloc = {}
+			myAllocationList = list()
+			# Cleaning the self.nodeFreeResources for each window
+			self.nodeFreeResources = None
+			self.nodeFreeResources = copy.deepcopy(self.nodeResources)
+			# Getting the placement matrix using the EA approach
+			evoPlacement_solution = None
+			evoPlacement_solution = self.wsga(w)
+
+			for app_num in range(0, len(self.appsRequests)):
+			#for app_num in range(0, len(self.appsRequestsWin[w])):
+				to_deploy = False
+				deploy_count = 0
+				# k --> (app, req, ser) v --> node
+				for k, v in evoPlacement_solution.items():
+					print (k, v)
+					if app_num == k[0]:
+						to_deploy = True
+						deploy_count += 1
+						res_required = self.servicesResources[k[2]]
+						self.nodeFreeResources[v] = self.nodeFreeResources[v] - res_required
+						myAllocation = {}
+						# myAllocation['app'] = int(self.mapService2App[k[2]])
+						# myAllocation['module_name'] = self.mapServiceId2ServiceName[k[2]]
+						myAllocation['app'] = int(k[0])
+						myAllocation['module_name'] = str(k[0]) + '_' + str(k[2])
+						myAllocation['id_resource'] = v
+						myAllocationList.append(myAllocation)
+						if v != self.cloudId:
+							servicesInFog += 1
+						else:
+							servicesInCloud += 1
+						#print ("The module %s of the application %s will be deployed at node %i" % (
+						#    self.mapService2App[app_num], self.mapServiceId2ServiceName[k[2]], v))
+				#print("%i module of the application %i were deployed" % (deploy_count, app_num))
+				if not to_deploy:
+					print ("Application %s NOT DEPLOYED" % app_num)
+
+			allAlloc['initialAllocation'] = myAllocationList
+			if windows_mode:
+				# Win
+				with  open(self.path + '\\' + self.cnf.resultFolder + '\\' + 'allocDefinitionEA' + str(w) + '.json', 'w') as allocFile:
+					allocFile.write(json.dumps(allAlloc))
+			else:
+				# Unix
+				with  open(self.path + '\\' + self.cnf.resultFolder + '\\' + 'allocDefinitionEA' + str(w) + '.json', 'w') as allocFile:
+					allocFile.write(json.dumps(allAlloc))
+
+			# TODO update network json file with new FRAM values
+
+			# allocationFile = open(self.path + '\\' + self.cnf.resultFolder + '\\' + + 'allocDefinitionEA' + str(w) + '.json', 'w')
+			# # allocationFile = open(self.confFolder + '/allocDefinitionEA' + str(w) + '.json', 'w')
+			# allocationFile.write(json.dumps(allAlloc))
+			# allocationFile.close()
+
+			# # Keeping nodes'resources. For this we need to use the copy of the nodeResources data strcuture (i.e., nodeFreeResources)
+			# final_nodeResources = sorted(self.nodeFreeResources.items(), key=operator.itemgetter(0))
+
+			# if os.stat('C:\\Users\\David Perez Abreu\\Sources\\Fog\\YAFS_Master\\src\\examples\\PopularityPlacement\\conf\\node_resources.csv').st_size == 0:
+			# 	# The file in empty
+			# 	ids = ['node_id']
+			# 	values = ['ini_resources']
+			# 	token = self.scenario + '_ea' + str(w)
+			# 	fvalues = [token]
+			# 	for ftuple in initial_nodeResources:
+			# 		ids.append(ftuple[0])
+			# 		values.append(ftuple[1])
+			# 	for stuple in final_nodeResources:
+			# 		fvalues.append(stuple[1])
+			# 	file = open('C:\\Users\\David Perez Abreu\\Sources\\Fog\\YAFS_Master\\src\\examples\\PopularityPlacement\\conf\\node_resources.csv', 'a+')
+			# 	file.write(",".join(str(item) for item in ids))
+			# 	file.write("\n")
+			# 	file.write(",".join(str(item) for item in values))
+			# 	file.write("\n")
+			# 	file.write(",".join(str(item) for item in fvalues))
+			# 	file.write("\n")
+			# 	file.close()
+			# else:
+			# 	token = self.scenario + '_ea' + str(w)
+			# 	fvalues = [token]
+			# 	for stuple in final_nodeResources:
+			# 		fvalues.append(stuple[1])
+			# 	file = open(
+			# 		'C:\\Users\\David Perez Abreu\\Sources\\Fog\\YAFS_Master\\src\\examples\\PopularityPlacement\\conf\\node_resources.csv', 'a+')
+			# 	file.write(",".join(str(item) for item in fvalues))
+			# 	file.write("\n")
+			# 	file.close()
+
+			print ("Evolutionary initial allocation performed: %i\n" % w)

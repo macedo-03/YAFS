@@ -145,43 +145,46 @@ def main(stop_time, it, folder_results,folder_data_processing, algorithm, seed, 
 
     start_clock = time.time()
 
-    if app1st_mode:
-        if algorithm == 'near_GW_BW_PR':
-            exp_conf.near_GW_placement_app1st(weight='BW_PR')
+    exp_conf.evoPlacement()
+    # exp_conf.near_GW_placement_app1st(weight='BW_PR')
 
-        elif algorithm == 'near_GW_PR':
-            exp_conf.near_GW_placement_app1st(weight='PR')
+    # if app1st_mode:
+    #     if algorithm == 'near_GW_BW_PR':
+    #         exp_conf.near_GW_placement_app1st(weight='BW_PR')
 
-        elif algorithm == 'near_GW_BW':
-            exp_conf.near_GW_placement_app1st(weight='BW')
+    #     elif algorithm == 'near_GW_PR':
+    #         exp_conf.near_GW_placement_app1st(weight='PR')
 
-        elif algorithm == 'greedy_FRAM':
-            exp_conf.greedy_algorithm_FRAM(app1st=True)
+    #     elif algorithm == 'near_GW_BW':
+    #         exp_conf.near_GW_placement_app1st(weight='BW')
 
-        elif algorithm == 'greedy_latency':
-            exp_conf.greedy_algorithm_latency(app1st=True, extra=False)
+    #     elif algorithm == 'greedy_FRAM':
+    #         exp_conf.greedy_algorithm_FRAM(app1st=True)
 
-        elif algorithm == 'RR_IPT_placement':
-            exp_conf.RR_IPT_placement_v5()
+    #     elif algorithm == 'greedy_latency':
+    #         exp_conf.greedy_algorithm_latency(app1st=True, extra=False)
 
-    else:
-        if algorithm == 'near_GW_BW_PR':
-            exp_conf.near_GW_placement(weight='BW_PR')
+    #     elif algorithm == 'RR_IPT_placement':
+    #         exp_conf.RR_IPT_placement_v5()
 
-        elif algorithm == 'near_GW_PR':
-            exp_conf.near_GW_placement(weight='PR')
+    # else:
+    #     if algorithm == 'near_GW_BW_PR':
+    #         exp_conf.near_GW_placement(weight='BW_PR')
 
-        elif algorithm == 'near_GW_BW':
-            exp_conf.near_GW_placement(weight='BW')
+    #     elif algorithm == 'near_GW_PR':
+    #         exp_conf.near_GW_placement(weight='PR')
 
-        elif algorithm == 'greedy_FRAM':
-            exp_conf.greedy_algorithm_FRAM(app1st=False)
+    #     elif algorithm == 'near_GW_BW':
+    #         exp_conf.near_GW_placement(weight='BW')
 
-        elif algorithm == 'greedy_latency':
-            exp_conf.greedy_algorithm_latency(app1st=False, extra=False)
+    #     elif algorithm == 'greedy_FRAM':
+    #         exp_conf.greedy_algorithm_FRAM(app1st=False)
 
-        elif algorithm == 'RR_IPT_placement':
-            exp_conf.RR_IPT_placement_v6()
+    #     elif algorithm == 'greedy_latency':
+    #         exp_conf.greedy_algorithm_latency(app1st=False, extra=False)
+
+    #     elif algorithm == 'RR_IPT_placement':
+    #         exp_conf.RR_IPT_placement_v6()
 
     placement_clock[algorithm].append(time.time() - start_clock)
 
@@ -291,7 +294,7 @@ if __name__ == '__main__':
     folder_data_processing.mkdir(parents=True, exist_ok=True)
     folder_data_processing = str(folder_data_processing) + '/'  # TODO bool
 
-    nIterations = 50 # iteration for each experiment
+    nIterations = 1 # iteration for each experiment
     simulationDuration = 20000
 
     god_tier_seed = 1706457491
