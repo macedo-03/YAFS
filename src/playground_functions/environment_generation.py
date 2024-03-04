@@ -254,7 +254,7 @@ class ExperimentConfiguration:
 			pos = nx.spring_layout(self.FGraph, seed=15612357)
 			nx.draw(self.FGraph, pos)
 			nx.draw_networkx_labels(self.FGraph, pos, font_size=8)
-			plt.show()
+			# plt.show()
 			# fig.savefig(self.confFolder + '/plots/netTopology.png')
 			plt.close(fig)  # close the figure
 
@@ -2449,8 +2449,7 @@ class ExperimentConfiguration:
 		return lrequestPerApp
 	
 	def create_instance_matrix(self):
-		activeServices = {}
-		
+
 		linstanceMatrix = {(i, j): 0 for i in range(self.numApplications) for j in range(self.numServices)}
 		for index in range(self.numApplications):
 			for mod in list(self.apps[index].nodes):
@@ -2498,7 +2497,7 @@ class ExperimentConfiguration:
 		lpopulation = []
 		newIndividual = {}
 		# vSolutions = 0
-		print ("Request per App: ", self.requestPerApp)
+		# print ("Request per App: ", self.requestPerApp)
 		for i in range(self.popSize):
 			for element in self.requestPerApp.items():
 				# There is a request for the application element[0][0] from the gw element[0][1]
@@ -2669,45 +2668,45 @@ class ExperimentConfiguration:
 			histoSolutions.append((min(fitness), (sum(fitness)/len(fitness)), i))
 			# print ('Generation %i\n' % i)
 
-		if self.cnf.graphicTerminal and window == 0:
-			fit = []
-			avg = []
-			gene = []
-			for ele in histoSolutions:
-				#print (ele)
-				fit.append(ele[0])
-				if ele[0] < 25:
-					error = 195
-				if ele[0] > 26 and ele[0] < 50:
-					error = 115
-				if ele[0] > 51 and ele[0] < 75:
-					error = 45
-				else:
-					error = 10
-				# error = 0
-				avg.append(ele[1] + error)
-				gene.append(ele[2])
-			plt.plot(gene, fit)
-			plt.plot(gene, avg, '--')
-			plt.grid(True)
-			plt.xlabel('Generations')
-			plt.ylabel('Fitness')
-			plt.legend(['Min', 'Avg'], bbox_to_anchor=(0.5, -0.21), loc="lower center", ncol=3, frameon=False)
-			plt.tight_layout()
-			plt.show()
-			# plt.savefig(
-			# 	self.cnf.resultFolder + 'dynamic/appDefinition/plots/fitness_' + self.scenario + '_' + str(self.popSize) + '_' + str(self.nGene) + '.png',
-			# 	bbox_inches='tight')
-			# plt.savefig(
-			# 	self.cnf.resultFolder + 'dynamic/appDefinition/plots/fitness_' + self.scenario + '_' + str(self.popSize) + '_' + str(self.nGene) + '.pdf',
-			# 	transparent=True, bbox_inches='tight')
-		temp = currentPopulation[fitness.index(min(fitness))]
-		return currentPopulation[fitness.index(min(fitness))] # The best individual of the last generation
+		# if self.cnf.graphicTerminal and window == 0:
+		# 	fit = []
+		# 	avg = []
+		# 	gene = []
+		# 	for ele in histoSolutions:
+		# 		#print (ele)
+		# 		fit.append(ele[0])
+		# 		if ele[0] < 25:
+		# 			error = 195
+		# 		if ele[0] > 26 and ele[0] < 50:
+		# 			error = 115
+		# 		if ele[0] > 51 and ele[0] < 75:
+		# 			error = 45
+		# 		else:
+		# 			error = 10
+		# 		# error = 0
+		# 		avg.append(ele[1] + error)
+		# 		gene.append(ele[2])
+		# 	plt.plot(gene, fit)
+		# 	plt.plot(gene, avg, '--')
+		# 	plt.grid(True)
+		# 	plt.xlabel('Generations')
+		# 	plt.ylabel('Fitness')
+		# 	plt.legend(['Min', 'Avg'], bbox_to_anchor=(0.5, -0.21), loc="lower center", ncol=3, frameon=False)
+		# 	plt.tight_layout()
+		# 	plt.show()
+		# 	# plt.savefig(
+		# 	# 	self.cnf.resultFolder + 'dynamic/appDefinition/plots/fitness_' + self.scenario + '_' + str(self.popSize) + '_' + str(self.nGene) + '.png',
+		# 	# 	bbox_inches='tight')
+		# 	# plt.savefig(
+		# 	# 	self.cnf.resultFolder + 'dynamic/appDefinition/plots/fitness_' + self.scenario + '_' + str(self.popSize) + '_' + str(self.nGene) + '.pdf',
+		# 	# 	transparent=True, bbox_inches='tight')
+		return currentPopulation[fitness.index(min(fitness))], min(fitness) # The best individual of the last generation
 
 	def evoPlacement(self):
 		self.requestsMapping()
 		# This data structure has the initial nodeResources values
 		initial_nodeResources = sorted(self.nodeResources.items(), key=operator.itemgetter(0))
+		best_solution = None
 
 		for w in range(0, self.num_windows):
 			servicesInFog = 0
@@ -2719,7 +2718,8 @@ class ExperimentConfiguration:
 			self.nodeFreeResources = copy.deepcopy(self.nodeResources)
 			# Getting the placement matrix using the EA approach
 			evoPlacement_solution = None
-			evoPlacement_solution = self.wsga(w)
+			evoPlacement_solution, solution_fitness = self.wsga(w)
+
 
 			for app_num in range(0, len(self.appsRequests)):
 			#for app_num in range(0, len(self.appsRequestsWin[w])):
@@ -2727,7 +2727,7 @@ class ExperimentConfiguration:
 				deploy_count = 0
 				# k --> (app, req, ser) v --> node
 				for k, v in evoPlacement_solution.items():
-					print (k, v)
+					# print (k, v)
 					if app_num == k[0]:
 						to_deploy = True
 						deploy_count += 1
@@ -2750,7 +2750,12 @@ class ExperimentConfiguration:
 				if not to_deploy:
 					print ("Application %s NOT DEPLOYED" % app_num)
 
+
 			allAlloc['initialAllocation'] = myAllocationList
+
+			if best_solution is None or solution_fitness < best_solution[1]:
+				best_solution = (allAlloc, solution_fitness, w)
+			
 			if windows_mode:
 				# Win
 				with  open(self.path + '\\' + self.cnf.resultFolder + '\\' + 'allocDefinitionEA' + str(w) + '.json', 'w') as allocFile:
@@ -2762,42 +2767,13 @@ class ExperimentConfiguration:
 
 			# TODO update network json file with new FRAM values
 
-			# allocationFile = open(self.path + '\\' + self.cnf.resultFolder + '\\' + + 'allocDefinitionEA' + str(w) + '.json', 'w')
-			# # allocationFile = open(self.confFolder + '/allocDefinitionEA' + str(w) + '.json', 'w')
-			# allocationFile.write(json.dumps(allAlloc))
-			# allocationFile.close()
-
-			# # Keeping nodes'resources. For this we need to use the copy of the nodeResources data strcuture (i.e., nodeFreeResources)
-			# final_nodeResources = sorted(self.nodeFreeResources.items(), key=operator.itemgetter(0))
-
-			# if os.stat('C:\\Users\\David Perez Abreu\\Sources\\Fog\\YAFS_Master\\src\\examples\\PopularityPlacement\\conf\\node_resources.csv').st_size == 0:
-			# 	# The file in empty
-			# 	ids = ['node_id']
-			# 	values = ['ini_resources']
-			# 	token = self.scenario + '_ea' + str(w)
-			# 	fvalues = [token]
-			# 	for ftuple in initial_nodeResources:
-			# 		ids.append(ftuple[0])
-			# 		values.append(ftuple[1])
-			# 	for stuple in final_nodeResources:
-			# 		fvalues.append(stuple[1])
-			# 	file = open('C:\\Users\\David Perez Abreu\\Sources\\Fog\\YAFS_Master\\src\\examples\\PopularityPlacement\\conf\\node_resources.csv', 'a+')
-			# 	file.write(",".join(str(item) for item in ids))
-			# 	file.write("\n")
-			# 	file.write(",".join(str(item) for item in values))
-			# 	file.write("\n")
-			# 	file.write(",".join(str(item) for item in fvalues))
-			# 	file.write("\n")
-			# 	file.close()
-			# else:
-			# 	token = self.scenario + '_ea' + str(w)
-			# 	fvalues = [token]
-			# 	for stuple in final_nodeResources:
-			# 		fvalues.append(stuple[1])
-			# 	file = open(
-			# 		'C:\\Users\\David Perez Abreu\\Sources\\Fog\\YAFS_Master\\src\\examples\\PopularityPlacement\\conf\\node_resources.csv', 'a+')
-			# 	file.write(",".join(str(item) for item in fvalues))
-			# 	file.write("\n")
-			# 	file.close()
-
 			print ("Evolutionary initial allocation performed: %i\n" % w)
+
+		if windows_mode:
+			# Win
+			with  open(self.path + '\\' + self.cnf.resultFolder + '\\' + 'allocDefinition.json', 'w') as allocFile:
+				allocFile.write(json.dumps(best_solution[0]))
+		else:
+			# Unix
+			with  open(self.path + '\\' + self.cnf.resultFolder + '\\' + 'allocDefinition.json', 'w') as allocFile:
+				allocFile.write(json.dumps(best_solution[0]))

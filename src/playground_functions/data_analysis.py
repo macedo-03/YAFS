@@ -194,15 +194,34 @@ def plot_avg_latency(folder_results, plot_name=None):
 
     apps_deployed = np.unique(dfl.app)
 
+    for app_ in range(max(apps_deployed)):
+        if app_ not in apps_deployed:
+            apps_deployed = np.append(apps_deployed, app_)
+    
+    apps_deployed = np.sort(apps_deployed)
+
     app_lat = []
 
     for app_ in apps_deployed:
-        app_lat.append(np.average(np.array(dfl[dfl.app == app_].latency)))
+        if app_ in np.unique(dfl.app):
+            app_lat.append(np.average(np.array(dfl[dfl.app == app_].latency)))
+        
+        else:
+            app_lat.append(0)
+
+    mean = sum(app_lat) / len(app_lat)
+
+    apps_deployed = [str(x) for x in apps_deployed] + ['mean']
+    app_lat.append(mean)
 
     ax = plt.subplot()
 
+    # Set colors for bars
+    colors = ['blue'] * len(apps_deployed)
+    colors[-1] = 'red'  # Set color for mean bar
+
     # plt.boxplot(app_lat)
-    plt.bar(range(0, len(apps_deployed)), app_lat)
+    plt.bar(range(0, len(apps_deployed)), app_lat, color=colors)
     plt.xticks(range(0, len(apps_deployed)), apps_deployed)
 
     ax.set_xlabel(f'Apps')
@@ -215,6 +234,11 @@ def plot_avg_latency(folder_results, plot_name=None):
         plot_name += '_avg_latency'
         ax.set_title(plot_name)
         save_plot(plot_name)
+
+    # Add value on top of each bar
+    for i, v in enumerate(app_lat):
+        plt.text(i, v, str(round(v, 2)), ha='center', va='bottom')
+
     plt.show()
 
 
