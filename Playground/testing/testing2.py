@@ -15,17 +15,17 @@ import numpy as np
 
 # Meus imports
 import plots_concatenator
-from src.playground_functions import data_analysis
-from src.playground_functions import environment_generation as eg, myConfig
-from src.playground_functions.routing_algorithms import MaxBW, MaxBW_Root
+from playground_functions import data_analysis
+from playground_functions import environment_generation as eg, myConfig
+from playground_functions.routing_algorithms import MaxBW, MaxBW_Root
 
-from src.yafs.core import Sim
-from src.yafs.application import create_applications_from_json
-from src.yafs.topology import Topology
+from yafs.core import Sim
+from yafs.application import create_applications_from_json
+from yafs.topology import Topology
 
-from src.yafs.placement import JSONPlacement
-from src.yafs.distribution import deterministic_distribution
-from src.yafs.path_routing import DeviceSpeedAwareRouting
+from yafs.placement import JSONPlacement
+from yafs.distribution import deterministic_distribution
+from yafs.path_routing import DeviceSpeedAwareRouting
 
 
 
