@@ -15,17 +15,17 @@ import numpy as np
 
 # Meus imports
 import plots_concatenator
-from playground_functions import data_analysis
-from playground_functions import environment_generation as eg, myConfig
-from playground_functions.routing_algorithms import MaxBW, MaxBW_Root
+from src.playground_functions import data_analysis
+from src.playground_functions import environment_generation as eg, myConfig
+from src.playground_functions.routing_algorithms import MaxBW, MaxBW_Root
 
-from yafs.core import Sim
-from yafs.application import create_applications_from_json
-from yafs.topology import Topology
+from src.yafs.core import Sim
+from src.yafs.application import create_applications_from_json
+from src.yafs.topology import Topology
 
-from yafs.placement import JSONPlacement
-from yafs.distribution import deterministic_distribution
-from yafs.path_routing import DeviceSpeedAwareRouting
+from src.yafs.placement import JSONPlacement
+from src.yafs.distribution import deterministic_distribution
+from src.yafs.path_routing import DeviceSpeedAwareRouting
 
 
 
@@ -305,7 +305,7 @@ if __name__ == '__main__':
     folder_data_processing.mkdir(parents=True, exist_ok=True)
     folder_data_processing = str(folder_data_processing) + '/'  # TODO bool
 
-    nIterations = 5 # iteration for each experiment
+    nIterations = 1 # iteration for each experiment
     simulationDuration = 20000
 
     god_tier_seed = 1706457491
@@ -346,6 +346,7 @@ if __name__ == '__main__':
     # # list_for_communities = ['RR_IPT_placement']
     # # list_for_communities = ['RR_IPT_placement_app1st', 'RR_IPT_placement_mod1st']
     combo_list = ['RR_IPT_placement', 'greedy_latency', 'greedy_FRAM','near_GW_BW_PR', 'near_GW_PR', 'evo_placement']
+    # combo_list = ['RR_IPT_placement', 'greedy_latency', 'near_GW_PR', 'evo_placement']
 
     # algorithm_list = list_for_mod1st
     algorithm_list = combo_list

@@ -2622,7 +2622,7 @@ class ExperimentConfiguration:
 		tournamentSize = 2
 		mutationProb = 0.25
 		# The number of mutations in a individual is proportional to the #off services in the apps
-		numMutations = int(len(self.servicesResources) * 0.1)
+		numMutations = int(len(self.servicesResources) * 0.3)
 		# Histogram of the fitness values along the generations (bestFitness, avgFitness)
 		histoSolutions = []
 		# Generating the random population
@@ -2638,6 +2638,8 @@ class ExperimentConfiguration:
 		#objLatencyNormalize = [float(lat) / max(objLatencyRaw) for lat in objLatencyRaw]
 		fitness = self.wSum(currentPopulation, objResource, objLatencyRaw, wRes, wLat)
 		#fitness = self.wSum(currentPopulation, objResource, objLatencyNormalize, wRes, wLat)
+		stabelized = 0
+		last_best_fitness = -1
 		for i in range(self.nGene):
 			offPopulation = []
 			for j in range(self.popSize):
@@ -2664,6 +2666,15 @@ class ExperimentConfiguration:
 			ordauxPopulation = [x for _, x in sorted(zip(auxFitness, auxPopulation), key=lambda x: x[0])] # []
 			ordauxFitness = sorted(auxFitness)
 			fitness = ordauxFitness[:self.popSize]
+
+			if (fitness[0] != last_best_fitness):
+				last_best_fitness = fitness[0]
+				stabelized = 0
+			else:
+				stabelized += 1
+				if stabelized == 10:
+					print ("Stabelized at Generation %i" % (i - 10))
+
 			currentPopulation = ordauxPopulation[:self.popSize]
 			histoSolutions.append((min(fitness), (sum(fitness)/len(fitness)), i))
 			# print ('Generation %i\n' % i)
@@ -2707,7 +2718,6 @@ class ExperimentConfiguration:
 		# This data structure has the initial nodeResources values
 		initial_nodeResources = sorted(self.nodeResources.items(), key=operator.itemgetter(0))
 		best_solution = None
-
 		for w in range(0, self.num_windows):
 			servicesInFog = 0
 			servicesInCloud = 0
