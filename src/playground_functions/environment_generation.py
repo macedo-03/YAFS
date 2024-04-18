@@ -2646,7 +2646,7 @@ class ExperimentConfiguration:
 	def wsga(self, window):
 		wLat = 1
 		wRes = 0
-		tournamentSize = 2
+		tournamentSize = 5
 		mutationProb = 0.25
 		# The number of mutations in a individual is proportional to the #off services in the apps
 		numMutations = int(len(self.servicesResources) * 0.35)
