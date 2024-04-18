@@ -12,7 +12,7 @@ class myConfig:
         self.num_windows = 1
         self.win_time = 10000
         self.popSize = 100
-        self.nGen = 400
+        self.nGen = 800
 
         try:
             os.stat(self.resultFolder)
