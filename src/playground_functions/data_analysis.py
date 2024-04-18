@@ -12,7 +12,6 @@ import json
 
 # from pathlib import Path
 
-
 # folder_results = Path("../../tutorial_scenarios/Playground/results/")
 # folder_results.mkdir(parents=True, exist_ok=True)
 # folder_results = str(folder_results)+"/"
@@ -712,3 +711,41 @@ def plot_fram_per_tier_per_algorithm(total_FRAM_per_tier, nIterations):
     fig.suptitle('FRAM per Tier per Algorithm')
     save_plot('ModsTiers__FRAM_per_Tier_per_Algorithm')
     plt.show()
+
+def plot_difference_in_fitness_for_generations(histoSolutions):
+    # line plot, histoSolutions = ((min fitness, avg fitness, generation), ...)
+    min_fitness = [x[0] for x in histoSolutions]
+    avg_fitness = [x[1] for x in histoSolutions]
+    dif = [avg_fitness[i] - min_fitness[i] for i in range(len(min_fitness))]
+    generation = [x[2] for x in histoSolutions]
+
+    plt.plot(generation, dif, label='Difference')
+    plt.xlabel('Generation')
+    plt.ylabel('Difference')
+    plt.title('Difference between Min and Avg Fitness per Generation')
+    plt.legend()
+    plt.show()
+
+
+def plot_fitness_for_generation(histoSolutions):
+    # line plot, histoSolutions = ((min fitness, avg fitness, generation), ...)
+    min_fitness = [x[0] for x in histoSolutions]
+    avg_fitness = [x[1] for x in histoSolutions]
+    generation = [x[2] for x in histoSolutions]
+
+    plt.plot(generation, min_fitness, label='Min Fitness')
+    plt.plot(generation, avg_fitness, label='Avg Fitness')
+    plt.xlabel('Generation')
+    plt.ylabel('Fitness')
+    plt.title('Fitness per Generation')
+    plt.legend()
+    plt.show()
+
+def plot_box_plot_fitness_each_50_generations(fitness_per_50th_generation):
+    # box plot, fitness_per_50th_generation = [[fitness for each element in generation 50], [fitness for each element in generation 100], ...]
+    plt.boxplot(fitness_per_50th_generation)
+    plt.xlabel('Generation')
+    plt.ylabel('Fitness')
+    plt.title('Fitness per Generation')
+    plt.show()
+    

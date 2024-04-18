@@ -7,12 +7,12 @@ class myConfig:
 
         self.graphicTerminal = True
         self.verbose_log = False
-        self.myConfiguration = 'medium'
+        self.myConfiguration = 'large'
         self.resultFolder = 'data'
         self.num_windows = 1
         self.win_time = 10000
         self.popSize = 100
-        self.nGen = 100
+        self.nGen = 800
 
         try:
             os.stat(self.resultFolder)

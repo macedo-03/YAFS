@@ -2622,7 +2622,7 @@ class ExperimentConfiguration:
 		tournamentSize = 2
 		mutationProb = 0.25
 		# The number of mutations in a individual is proportional to the #off services in the apps
-		numMutations = int(len(self.servicesResources) * 0.3)
+		numMutations = int(len(self.servicesResources) * 0.35)
 		# Histogram of the fitness values along the generations (bestFitness, avgFitness)
 		histoSolutions = []
 		# Generating the random population
@@ -2637,10 +2637,13 @@ class ExperimentConfiguration:
 		# 						objLatencyRaw]
 		#objLatencyNormalize = [float(lat) / max(objLatencyRaw) for lat in objLatencyRaw]
 		fitness = self.wSum(currentPopulation, objResource, objLatencyRaw, wRes, wLat)
+		fitness_every_50_generations = []
 		#fitness = self.wSum(currentPopulation, objResource, objLatencyNormalize, wRes, wLat)
 		stabelized = 0
 		last_best_fitness = -1
 		for i in range(self.nGene):
+			if (i % 50 == 0):
+				print ("Generation %i" % i)
 			offPopulation = []
 			for j in range(self.popSize):
 				father1 = self.fTournament(tournamentSize, currentPopulation, fitness)
@@ -2666,6 +2669,9 @@ class ExperimentConfiguration:
 			ordauxPopulation = [x for _, x in sorted(zip(auxFitness, auxPopulation), key=lambda x: x[0])] # []
 			ordauxFitness = sorted(auxFitness)
 			fitness = ordauxFitness[:self.popSize]
+
+			if i % 50 == 0 and i != 0:
+				fitness_every_50_generations.append(fitness)
 
 			if (fitness[0] != last_best_fitness):
 				last_best_fitness = fitness[0]
@@ -2711,12 +2717,13 @@ class ExperimentConfiguration:
 		# 	# plt.savefig(
 		# 	# 	self.cnf.resultFolder + 'dynamic/appDefinition/plots/fitness_' + self.scenario + '_' + str(self.popSize) + '_' + str(self.nGene) + '.pdf',
 		# 	# 	transparent=True, bbox_inches='tight')
-		return currentPopulation[fitness.index(min(fitness))], min(fitness) # The best individual of the last generation
+		return currentPopulation[fitness.index(min(fitness))], min(fitness), histoSolutions, fitness_every_50_generations # The best individual of the last generation
 
 	def evoPlacement(self):
 		self.requestsMapping()
 		# This data structure has the initial nodeResources values
 		initial_nodeResources = sorted(self.nodeResources.items(), key=operator.itemgetter(0))
+		histoSolutions = []
 		best_solution = None
 		for w in range(0, self.num_windows):
 			servicesInFog = 0
@@ -2728,8 +2735,7 @@ class ExperimentConfiguration:
 			self.nodeFreeResources = copy.deepcopy(self.nodeResources)
 			# Getting the placement matrix using the EA approach
 			evoPlacement_solution = None
-			evoPlacement_solution, solution_fitness = self.wsga(w)
-
+			evoPlacement_solution, solution_fitness, histoSolutions, fitness_every_50_generations = self.wsga(w)
 
 			for app_num in range(0, len(self.appsRequests)):
 			#for app_num in range(0, len(self.appsRequestsWin[w])):
@@ -2787,3 +2793,5 @@ class ExperimentConfiguration:
 			# Unix
 			with  open(self.path + '\\' + self.cnf.resultFolder + '\\' + 'allocDefinition.json', 'w') as allocFile:
 				allocFile.write(json.dumps(best_solution[0]))
+
+		return best_solution[1], histoSolutions, fitness_every_50_generations
