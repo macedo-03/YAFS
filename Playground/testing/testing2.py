@@ -276,7 +276,6 @@ def main(stop_time, it, folder_results,folder_data_processing, algorithm, seed, 
             bestSolution, histoSolutions, fitness_every_50_generations = exp_conf.evoPlacement()
             data_analysis.plot_fitness_for_generation(histoSolutions)
             data_analysis.plot_difference_in_fitness_for_generations(histoSolutions)
-            data_analysis.plot_box_plot_fitness_each_50_generations(fitness_every_50_generations)
 
 
 

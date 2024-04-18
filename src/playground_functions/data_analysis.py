@@ -719,6 +719,7 @@ def plot_difference_in_fitness_for_generations(histoSolutions):
     dif = [avg_fitness[i] - min_fitness[i] for i in range(len(min_fitness))]
     generation = [x[2] for x in histoSolutions]
 
+    plt.figure()  # Create a new figure
     plt.plot(generation, dif, label='Difference')
     plt.xlabel('Generation')
     plt.ylabel('Difference')
@@ -734,6 +735,7 @@ def plot_fitness_for_generation(histoSolutions):
     avg_fitness = [x[1] for x in histoSolutions]
     generation = [x[2] for x in histoSolutions]
 
+    plt.figure()  # Create a new figure
     plt.plot(generation, min_fitness, label='Min Fitness')
     plt.plot(generation, avg_fitness, label='Avg Fitness')
     plt.xlabel('Generation')
