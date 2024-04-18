@@ -724,6 +724,7 @@ def plot_difference_in_fitness_for_generations(histoSolutions):
     plt.ylabel('Difference')
     plt.title('Difference between Min and Avg Fitness per Generation')
     plt.legend()
+    save_plot('Difference_between_Min_and_Avg_Fitness_per_Generation')
     plt.show()
 
 
@@ -739,6 +740,7 @@ def plot_fitness_for_generation(histoSolutions):
     plt.ylabel('Fitness')
     plt.title('Fitness per Generation')
     plt.legend()
+    save_plot('Fitness_per_Generation')
     plt.show()
 
 def plot_box_plot_fitness_each_50_generations(fitness_per_50th_generation):
