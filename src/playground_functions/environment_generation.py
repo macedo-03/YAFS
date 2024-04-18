@@ -2643,10 +2643,10 @@ class ExperimentConfiguration:
 			lindividual.update({element[0]: random.randint(0, self.numNodes - 1)})
 		return lindividual
 
-	def wsga(self, window):
+	def wsga(self, window, tournamentSize=2):
 		wLat = 1
 		wRes = 0
-		tournamentSize = 5
+		# tournamentSize = 5
 		mutationProb = 0.25
 		# The number of mutations in a individual is proportional to the #off services in the apps
 		numMutations = int(len(self.servicesResources) * 0.35)
@@ -2746,7 +2746,7 @@ class ExperimentConfiguration:
 		# 	# 	transparent=True, bbox_inches='tight')
 		return currentPopulation[fitness.index(min(fitness))], min(fitness), histoSolutions, fitness_every_50_generations # The best individual of the last generation
 
-	def evoPlacement(self):
+	def evoPlacement(self, tournamentSize=2):
 		self.requestsMapping()
 		# This data structure has the initial nodeResources values
 		initial_nodeResources = sorted(self.nodeResources.items(), key=operator.itemgetter(0))
@@ -2762,7 +2762,7 @@ class ExperimentConfiguration:
 			self.nodeFreeResources = copy.deepcopy(self.nodeResources)
 			# Getting the placement matrix using the EA approach
 			evoPlacement_solution = None
-			evoPlacement_solution, solution_fitness, histoSolutions, fitness_every_50_generations = self.wsga(w)
+			evoPlacement_solution, solution_fitness, histoSolutions, fitness_every_50_generations = self.wsga(w, tournamentSize)
 
 			for app_num in range(0, len(self.appsRequests)):
 			#for app_num in range(0, len(self.appsRequestsWin[w])):

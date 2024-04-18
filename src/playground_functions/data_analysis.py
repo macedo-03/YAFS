@@ -712,7 +712,7 @@ def plot_fram_per_tier_per_algorithm(total_FRAM_per_tier, nIterations):
     save_plot('ModsTiers__FRAM_per_Tier_per_Algorithm')
     plt.show()
 
-def plot_difference_in_fitness_for_generations(histoSolutions):
+def plot_difference_in_fitness_for_generations(histoSolutions, tournament_size=2):
     # line plot, histoSolutions = ((min fitness, avg fitness, generation), ...)
     min_fitness = [x[0] for x in histoSolutions]
     avg_fitness = [x[1] for x in histoSolutions]
@@ -723,13 +723,13 @@ def plot_difference_in_fitness_for_generations(histoSolutions):
     plt.plot(generation, dif, label='Difference')
     plt.xlabel('Generation')
     plt.ylabel('Difference')
-    plt.title('Difference between Min and Avg Fitness per Generation')
+    plt.title('Difference between Min and Avg Fitness per Generation' + f' (Tournament Size: {tournament_size})')
     plt.legend()
-    save_plot('Difference_between_Min_and_Avg_Fitness_per_Generation')
+    save_plot('Difference_between_Min_and_Avg_Fitness_per_Generation' + f' (Tournament Size: {tournament_size})')
     plt.show()
 
 
-def plot_fitness_for_generation(histoSolutions):
+def plot_fitness_for_generation(histoSolutions, tournament_size=2):
     # line plot, histoSolutions = ((min fitness, avg fitness, generation), ...)
     min_fitness = [x[0] for x in histoSolutions]
     avg_fitness = [x[1] for x in histoSolutions]
@@ -740,9 +740,9 @@ def plot_fitness_for_generation(histoSolutions):
     plt.plot(generation, avg_fitness, label='Avg Fitness')
     plt.xlabel('Generation')
     plt.ylabel('Fitness')
-    plt.title('Fitness per Generation')
+    plt.title('Fitness per Generation' + f' (Tournament Size: {tournament_size})')
     plt.legend()
-    save_plot('Fitness_per_Generation')
+    save_plot('Fitness_per_Generation' + f' (Tournament Size: {tournament_size})')
     plt.show()
 
 def plot_box_plot_fitness_each_50_generations(fitness_per_50th_generation):

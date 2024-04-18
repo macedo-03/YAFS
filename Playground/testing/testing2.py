@@ -272,10 +272,15 @@ def main(stop_time, it, folder_results,folder_data_processing, algorithm, seed, 
         elif algorithm == 'RR_IPT_placement':
             exp_conf.RR_IPT_placement_v6()
 
-        elif algorithm == 'evo_placement':
+        elif algorithm == 'evo_placement2':
             bestSolution, histoSolutions, fitness_every_50_generations = exp_conf.evoPlacement()
-            data_analysis.plot_fitness_for_generation(histoSolutions)
-            data_analysis.plot_difference_in_fitness_for_generations(histoSolutions)
+            # data_analysis.plot_fitness_for_generation(histoSolutions)
+            # data_analysis.plot_difference_in_fitness_for_generations(histoSolutions)
+
+        elif algorithm == 'evo_placement5':
+            bestSolution, histoSolutions, fitness_every_50_generations = exp_conf.evoPlacement(tournamentSize=5)
+            # data_analysis.plot_fitness_for_generation(histoSolutions, 5)
+            # data_analysis.plot_difference_in_fitness_for_generations(histoSolutions, 5)
 
 
 
@@ -354,7 +359,7 @@ if __name__ == '__main__':
 
     # algorithm_list = list_for_mod1st
     # algorithm_list = combo_list
-    algorithm_list = ['evo_placement']
+    algorithm_list = ['evo_placement2', 'evo_placement5']
     app1st_mode = False
 
 
@@ -383,8 +388,8 @@ if __name__ == '__main__':
     # print(placement_clock)
 
     # # latency
-    # data_analysis.scatter_plot_app_latency_per_algorithm(folder_data_processing, algorithm_list)
-    # data_analysis.plot_latency_per_placement_algorithm(folder_data_processing, algorithm_list)
+    data_analysis.scatter_plot_app_latency_per_algorithm(folder_data_processing, algorithm_list)
+    data_analysis.plot_latency_per_placement_algorithm(folder_data_processing, algorithm_list)
     # data_analysis.boxplot_latency_per_placement_algorithm(folder_data_processing, algorithm_list)
     # # execution time
     # data_analysis.plot_algorithm_exec_time(placement_clock, nIterations)
