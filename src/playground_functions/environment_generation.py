@@ -163,6 +163,33 @@ class ExperimentConfiguration:
 			self.func_APPDEADLINE = "random.randint(2600,6600)"  # MS
 			return 100
 
+		elif size == 'huge':
+			# Cloud
+			self.CLOUDCAPACITY = 9999999999999999  # MB RAM
+			self.CLOUDSPEED = 10000  # INSTR x MS
+			self.CLOUDBW = 125000  # BYTES / MS --> 1000 Mbits/s
+			self.CLOUDPR = 500  # MS
+
+			# Network
+			self.PERCENTATGEOFGATEWAYS = 0.25
+			self.func_PROPAGATIONTIME = "random.randint(2,10)"  # MS
+			self.func_BANDWITDH = "random.randint(75000,75000)"  # BYTES / MS
+			self.func_NETWORKGENERATION = "nx.barabasi_albert_graph(n=200, m=2)"  # Algorithm for the generation of the network topology
+			self.func_NODERESOURECES = "random.randint(10,25)"  # MB RAM #random distribution for the resources of the fog devices
+			self.func_NODESPEED = "random.randint(500,1000)"  # INTS / MS #random distribution for the speed of the fog devices
+
+			# Apps and Services
+			self.TOTALNUMBEROFAPPS = 40
+			self.func_APPGENERATION = "nx.gn_graph(random.randint(2,15))"  # Algorithm for the generation of the random applications
+			self.func_SERVICEINSTR = "random.randint(20000,60000)"  # INSTR --> Considering the nodespeed the values should be between 200 & 600 MS
+			self.func_SERVICEMESSAGESIZE = "random.randint(1500000,4500000)"  # BYTES --> Considering the BW the values should be between 20 & 60 MS
+			self.func_SERVICERESOURCES = "random.randint(1,8)"  # MB of RAM consume by services. Considering noderesources & appgeneration it will be possible to allocate 1 app or +/- 10 services per node
+			self.func_APPDEADLINE = "random.randint(2600,6600)"  # MS
+			
+			return 200
+
+			
+
 	def networkGeneration(self, n=20, m=2, file_name_network='netDefinition.json'):
 		# Generation of the network topology
 
