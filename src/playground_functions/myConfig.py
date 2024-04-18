@@ -7,7 +7,7 @@ class myConfig:
 
         self.graphicTerminal = True
         self.verbose_log = False
-        self.myConfiguration = 'large'
+        self.myConfiguration = 'huge'
         self.resultFolder = 'data'
         self.num_windows = 1
         self.win_time = 10000
