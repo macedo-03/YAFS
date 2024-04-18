@@ -314,7 +314,7 @@ if __name__ == '__main__':
     folder_data_processing.mkdir(parents=True, exist_ok=True)
     folder_data_processing = str(folder_data_processing) + '/'  # TODO bool
 
-    nIterations = 1 # iteration for each experiment
+    nIterations = 20 # iteration for each experiment
     simulationDuration = 20000
 
     god_tier_seed = 1706457491
@@ -355,11 +355,11 @@ if __name__ == '__main__':
     # # list_for_communities = ['RR_IPT_placement']
     # # list_for_communities = ['RR_IPT_placement_app1st', 'RR_IPT_placement_mod1st']
     # combo_list = ['RR_IPT_placement', 'greedy_latency', 'greedy_FRAM','near_GW_BW_PR', 'near_GW_PR', 'evo_placement']
-    # combo_list = ['RR_IPT_placement', 'greedy_latency', 'near_GW_PR', 'evo_placement']
+    combo_list = ['RR_IPT_placement', 'greedy_latency', 'near_GW_PR', 'evo_placement2', 'evo_placement5']
 
     # algorithm_list = list_for_mod1st
-    # algorithm_list = combo_list
-    algorithm_list = ['evo_placement2', 'evo_placement5']
+    algorithm_list = combo_list
+    # algorithm_list = ['evo_placement2', 'evo_placement5']
     app1st_mode = False
 
 
