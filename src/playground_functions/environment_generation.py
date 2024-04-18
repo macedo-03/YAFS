@@ -2791,7 +2791,7 @@ class ExperimentConfiguration:
 				allocFile.write(json.dumps(best_solution[0]))
 		else:
 			# Unix
-			with  open(self.path + '\\' + self.cnf.resultFolder + '\\' + 'allocDefinition.json', 'w') as allocFile:
+			with  open(self.path + '/' + self.cnf.resultFolder + '/' + 'allocDefinition.json', 'w') as allocFile:
 				allocFile.write(json.dumps(best_solution[0]))
 
 		return best_solution[1], histoSolutions, fitness_every_50_generations
