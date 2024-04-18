@@ -2778,7 +2778,7 @@ class ExperimentConfiguration:
 					allocFile.write(json.dumps(allAlloc))
 			else:
 				# Unix
-				with  open(self.path + '\\' + self.cnf.resultFolder + '\\' + 'allocDefinitionEA' + str(w) + '.json', 'w') as allocFile:
+				with  open(self.path + '/' + self.cnf.resultFolder + '/' + 'allocDefinitionEA' + str(w) + '.json', 'w') as allocFile:
 					allocFile.write(json.dumps(allAlloc))
 
 			# TODO update network json file with new FRAM values
