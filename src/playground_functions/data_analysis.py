@@ -723,9 +723,9 @@ def plot_difference_in_fitness_for_generations(histoSolutions, tournament_size=2
     plt.plot(generation, dif, label='Difference')
     plt.xlabel('Generation')
     plt.ylabel('Difference')
-    plt.title('Difference between Min and Avg Fitness per Generation' + f' (Tournament Size: {tournament_size})')
+    plt.title('Difference between Min and Avg Fitness per Generation' + f'(Tournament_{tournament_size})')
     plt.legend()
-    save_plot('Difference_between_Min_and_Avg_Fitness_per_Generation' + f' (Tournament Size: {tournament_size})')
+    save_plot('Difference_between_Min_and_Avg_Fitness_per_Generation' + f'(Tournament_{tournament_size})')
     plt.show()
 
 
@@ -740,9 +740,9 @@ def plot_fitness_for_generation(histoSolutions, tournament_size=2):
     plt.plot(generation, avg_fitness, label='Avg Fitness')
     plt.xlabel('Generation')
     plt.ylabel('Fitness')
-    plt.title('Fitness per Generation' + f' (Tournament Size: {tournament_size})')
+    plt.title('Fitness per Generation' + f'(Tournament_{tournament_size})')
     plt.legend()
-    save_plot('Fitness_per_Generation' + f' (Tournament Size: {tournament_size})')
+    save_plot('Fitness_per_Generation' + f'(Tournament_{tournament_size})')
     plt.show()
 
 def plot_box_plot_fitness_each_50_generations(fitness_per_50th_generation):
