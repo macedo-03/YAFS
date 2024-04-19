@@ -274,13 +274,13 @@ def main(stop_time, it, folder_results,folder_data_processing, algorithm, seed, 
 
         elif algorithm == 'evo_placement2':
             bestSolution, histoSolutions, fitness_every_50_generations = exp_conf.evoPlacement()
-            # data_analysis.plot_fitness_for_generation(histoSolutions)
-            # data_analysis.plot_difference_in_fitness_for_generations(histoSolutions)
+            data_analysis.plot_fitness_for_generation(histoSolutions)
+            data_analysis.plot_difference_in_fitness_for_generations(histoSolutions)
 
         elif algorithm == 'evo_placement5':
             bestSolution, histoSolutions, fitness_every_50_generations = exp_conf.evoPlacement(tournamentSize=5)
-            # data_analysis.plot_fitness_for_generation(histoSolutions, 5)
-            # data_analysis.plot_difference_in_fitness_for_generations(histoSolutions, 5)
+            data_analysis.plot_fitness_for_generation(histoSolutions, 5)
+            data_analysis.plot_difference_in_fitness_for_generations(histoSolutions, 5)
 
 
 
@@ -314,7 +314,7 @@ if __name__ == '__main__':
     folder_data_processing.mkdir(parents=True, exist_ok=True)
     folder_data_processing = str(folder_data_processing) + '/'  # TODO bool
 
-    nIterations = 20 # iteration for each experiment
+    nIterations = 1 # iteration for each experiment
     simulationDuration = 20000
 
     god_tier_seed = 1706457491
