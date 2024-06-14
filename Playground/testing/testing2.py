@@ -26,6 +26,7 @@ from yafs.topology import Topology
 from yafs.placement import JSONPlacement
 from yafs.distribution import deterministic_distribution
 from yafs.path_routing import DeviceSpeedAwareRouting
+from yafs.distribution import deterministicDistributionStartPoint
 
 
 
@@ -190,6 +191,22 @@ def simulation(path, stop_time, it, folder_results, folder_data_processing, algo
         idDES = s.deploy_source(app_name, id_node=node, msg=msg, distribution=dist)
 
     """
+    Failure process
+    """
+    pathExperimento = "data/"
+    ilpPath = ''
+    time_shift = 2000
+    distribution = deterministicDistributionStartPoint(name="Deterministic", time=time_shift,start=1000)
+    failurefilelog = open(pathExperimento+"Failure_%s_%i.csv" % (ilpPath,stop_time),"w")
+    failurefilelog.write("node, module, time\n")
+
+    # choose 10 renadom nodes to fail that are not the cloud nor 
+    randomValues = chooseNodesToFail(10, dataNetwork)
+    s.deploy_monitor("Failure Generation", failureControl, distribution,sim=s,filelog=failurefilelog,ids=randomValues)
+    
+    
+    
+    """
     RUNNING - last step
     """
     logging.info(" Performing simulation: %i " % it)
@@ -300,6 +317,65 @@ def main(stop_time, it, folder_results,folder_data_processing, algorithm, seed, 
     simulation(path=folder_results, stop_time=stop_time, it=it, folder_results=folder_results, folder_data_processing=folder_data_processing, algorithm=algorithm, seed=seed, total_mods_per_node=total_mods_per_node, total_mods_per_node_with_node_id=total_mods_per_node_with_node_id, total_mods_cloud=total_mods_cloud, avg_mods_per_tier_node=avg_mods_per_tier_node, app1st_mode=app1st_mode, lnodes=nodes)
     # data_analysis.plot_avg_latency(folder_results)
 
+
+"""
+It returns a list of nodes to fail
+"""
+def chooseNodesToFail(n, dataNetwork):
+    # select possible nodes to fail (cannot fail the cloud -> tier 0 nor the gateway nodes -> tier 2)
+    nodes = [node for node, data in enumerate(dataNetwork['entity']) if data['tier'] == 1]
+    return random.sample(nodes, min(n, len(nodes)))
+
+
+"""
+It returns the software modules (a list of identifiers of DES process) deployed on this node
+"""
+def getProcessFromThatNode(sim, node_to_remove):
+    if node_to_remove in sim.alloc_DES.values():
+        DES = []
+        # This node can have multiples DES processes on itself
+        for k, v in sim.alloc_DES.items():
+            if v == node_to_remove:
+                DES.append(k)
+        return DES,True
+    else:
+        return [],False
+
+
+"""
+It controls the elimination of a node
+"""
+idxFControl = 0
+def failureControl(sim,filelog,ids):
+    global idxFControl
+    nodes = list(sim.topology.G.nodes())
+    
+    if idxFControl >= len(ids):
+        return
+    
+    if len(nodes)>1:
+        node_to_remove = ids[idxFControl]
+        idxFControl +=1
+
+        keys_DES,someModuleDeployed = getProcessFromThatNode(sim, node_to_remove)
+
+        print("\n\nRemoving node: %i, Total nodes: %i" % (node_to_remove, len(nodes)))
+        print("\tStopping some DES processes: %s\n\n"%keys_DES)
+        filelog.write("%i,%s,%d\n"%(node_to_remove, someModuleDeployed,sim.env.now))
+
+        ##print(some information:)
+        for des in keys_DES:
+            if des in sim.alloc_source.keys():
+                print("Removing a Gtw/User entity\t"*4)
+
+        sim.remove_node(node_to_remove)
+        for key in keys_DES:
+            sim.stop_process(key)
+    else:
+        sim.stop = True ## We stop the simulation
+
+
+
 if __name__ == '__main__':
     # LOGGING_CONFIG = Path(__file__).parent / 'logging.ini'
     # logging.config.fileConfig(LOGGING_CONFIG)
@@ -355,7 +431,8 @@ if __name__ == '__main__':
     # # list_for_communities = ['RR_IPT_placement']
     # # list_for_communities = ['RR_IPT_placement_app1st', 'RR_IPT_placement_mod1st']
     # combo_list = ['RR_IPT_placement', 'greedy_latency', 'greedy_FRAM','near_GW_BW_PR', 'near_GW_PR', 'evo_placement']
-    combo_list = ['RR_IPT_placement', 'greedy_latency', 'near_GW_PR', 'evo_placement2', 'evo_placement5']
+    combo_list = ['greedy_latency']
+    # combo_list = ['RR_IPT_placement', 'greedy_latency', 'near_GW_PR', 'evo_placement2', 'evo_placement5']
 
     # algorithm_list = list_for_mod1st
     algorithm_list = combo_list
@@ -388,8 +465,8 @@ if __name__ == '__main__':
     # print(placement_clock)
 
     # # latency
-    data_analysis.scatter_plot_app_latency_per_algorithm(folder_data_processing, algorithm_list)
-    data_analysis.plot_latency_per_placement_algorithm(folder_data_processing, algorithm_list)
+    # data_analysis.scatter_plot_app_latency_per_algorithm(folder_data_processing, algorithm_list)
+    # data_analysis.plot_latency_per_placement_algorithm(folder_data_processing, algorithm_list)
     # data_analysis.boxplot_latency_per_placement_algorithm(folder_data_processing, algorithm_list)
     # # execution time
     # data_analysis.plot_algorithm_exec_time(placement_clock, nIterations)
